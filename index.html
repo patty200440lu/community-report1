@@ -153,7 +153,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
       <div id="visit-purpose">
         <div class="card">
           <div class="ctitle">各月目的次數登錄</div>
-          <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="vp-month">${mo()}</select></div></div>
+          <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="vp-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div></div>
           <div class="pgrid">
             <div class="pitem"><label>中心簡介</label><input type="number" id="vp-intro" min="0" value="0"></div>
             <div class="pitem"><label>社區評估</label><input type="number" id="vp-eval" min="0" value="0"></div>
@@ -170,7 +170,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
         <div class="card">
           <div class="ctitle">新增訪視社區</div>
           <div class="fr">
-            <div class="fg" style="max-width:110px"><label>月份</label><select id="vc-month">${mo()}</select></div>
+            <div class="fg" style="max-width:110px"><label>月份</label><select id="vc-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
             <div class="fg"><label>社區名稱</label><input type="text" id="vc-name" placeholder="例：新店中山社區"></div>
             <div class="fg" style="max-width:100px"><label>訪視次數</label><input type="number" id="vc-cnt" min="1" value="1"></div>
             <div class="fg" style="max-width:100px"><label>受益人次</label><input type="number" id="vc-ppl" min="0" value="0"></div>
@@ -192,7 +192,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
       <div id="contact-purpose">
         <div class="card">
           <div class="ctitle">各月目的次數登錄</div>
-          <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="cp-month">${mo()}</select></div></div>
+          <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="cp-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div></div>
           <div class="pgrid">
             <div class="pitem"><label>訪視邀約</label><input type="number" id="cpp-visit" min="0" value="0"></div>
             <div class="pitem"><label>資源連結</label><input type="number" id="cpp-res" min="0" value="0"></div>
@@ -211,7 +211,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
         <div class="card">
           <div class="ctitle">新增聯繫社區</div>
           <div class="fr">
-            <div class="fg" style="max-width:110px"><label>月份</label><select id="cc-month">${mo()}</select></div>
+            <div class="fg" style="max-width:110px"><label>月份</label><select id="cc-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
             <div class="fg"><label>社區名稱（可多個，Enter 或逗號分隔）</label>
               <div class="tw" id="cc-tw" onclick="document.getElementById('cc-ti').focus()"><input class="ti" id="cc-ti" placeholder="輸入社區名稱..."></div>
             </div>
@@ -233,7 +233,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
       <div id="office-purpose">
         <div class="card">
           <div class="ctitle">各月目的次數登錄</div>
-          <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="op-month">${mo()}</select></div></div>
+          <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="op-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div></div>
           <div class="pgrid">
             <div class="pitem"><label>訪視邀約</label><input type="number" id="opp-visit" min="0" value="0"></div>
             <div class="pitem"><label>資源連結</label><input type="number" id="opp-res" min="0" value="0"></div>
@@ -251,7 +251,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
         <div class="card">
           <div class="ctitle">新增聯繫公所（行政區）</div>
           <div class="fr">
-            <div class="fg" style="max-width:110px"><label>月份</label><select id="oc-month">${mo()}</select></div>
+            <div class="fg" style="max-width:110px"><label>月份</label><select id="oc-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
             <div class="fg"><label>行政區（可多個，Enter 或逗號分隔）</label>
               <div class="tw" id="oc-tw" onclick="document.getElementById('oc-ti').focus()"><input class="ti" id="oc-ti" placeholder="輸入行政區名稱..."></div>
             </div>
@@ -333,7 +333,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
   <button class="modal-close" onclick="closeModal('modal-vp')">✕</button>
   <div class="modal-title">✏️ 編輯訪視目的統計</div>
   <input type="hidden" id="edit-vp-id">
-  <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="edit-vp-month">${mo()}</select></div></div>
+  <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="edit-vp-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div></div>
   <div class="pgrid">
     <div class="pitem"><label>中心簡介</label><input type="number" id="edit-vp-intro" min="0"></div>
     <div class="pitem"><label>社區評估</label><input type="number" id="edit-vp-eval" min="0"></div>
@@ -349,7 +349,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
   <div class="modal-title">✏️ 編輯訪視社區</div>
   <input type="hidden" id="edit-vc-id">
   <div class="fr">
-    <div class="fg" style="max-width:110px"><label>月份</label><select id="edit-vc-month">${mo()}</select></div>
+    <div class="fg" style="max-width:110px"><label>月份</label><select id="edit-vc-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
     <div class="fg"><label>社區名稱</label><input type="text" id="edit-vc-name"></div>
     <div class="fg" style="max-width:100px"><label>訪視次數</label><input type="number" id="edit-vc-cnt" min="1"></div>
     <div class="fg" style="max-width:100px"><label>受益人次</label><input type="number" id="edit-vc-ppl" min="0"></div>
@@ -360,7 +360,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
   <button class="modal-close" onclick="closeModal('modal-cp')">✕</button>
   <div class="modal-title">✏️ 編輯社區聯繫目的統計</div>
   <input type="hidden" id="edit-cp-id">
-  <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="edit-cp-month">${mo()}</select></div></div>
+  <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="edit-cp-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div></div>
   <div class="pgrid">
     <div class="pitem"><label>訪視邀約</label><input type="number" id="edit-cp-visit" min="0"></div>
     <div class="pitem"><label>資源連結</label><input type="number" id="edit-cp-res" min="0"></div>
@@ -378,7 +378,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
   <div class="modal-title">✏️ 編輯聯繫社區</div>
   <input type="hidden" id="edit-cc-id">
   <div class="fr">
-    <div class="fg" style="max-width:110px"><label>月份</label><select id="edit-cc-month">${mo()}</select></div>
+    <div class="fg" style="max-width:110px"><label>月份</label><select id="edit-cc-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
     <div class="fg"><label>社區名稱</label><input type="text" id="edit-cc-name"></div>
   </div>
   <div class="modal-footer"><button class="btn btn-d btn-sm" onclick="closeModal('modal-cc')">取消</button><button class="btn btn-p" onclick="saveEditCC()">💾 儲存</button></div>
@@ -387,7 +387,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
   <button class="modal-close" onclick="closeModal('modal-op')">✕</button>
   <div class="modal-title">✏️ 編輯公所聯繫目的統計</div>
   <input type="hidden" id="edit-op-id">
-  <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="edit-op-month">${mo()}</select></div></div>
+  <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="edit-op-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div></div>
   <div class="pgrid">
     <div class="pitem"><label>訪視邀約</label><input type="number" id="edit-op-visit" min="0"></div>
     <div class="pitem"><label>資源連結</label><input type="number" id="edit-op-res" min="0"></div>
@@ -404,7 +404,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
   <div class="modal-title">✏️ 編輯公所聯繫行政區</div>
   <input type="hidden" id="edit-oc-id">
   <div class="fr">
-    <div class="fg" style="max-width:110px"><label>月份</label><select id="edit-oc-month">${mo()}</select></div>
+    <div class="fg" style="max-width:110px"><label>月份</label><select id="edit-oc-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
     <div class="fg"><label>行政區名稱</label><input type="text" id="edit-oc-name"></div>
   </div>
   <div class="modal-footer"><button class="btn btn-d btn-sm" onclick="closeModal('modal-oc')">取消</button><button class="btn btn-p" onclick="saveEditOC()">💾 儲存</button></div>
