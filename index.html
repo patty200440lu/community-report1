@@ -1046,18 +1046,101 @@ async function exportWord(){
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
 </Relationships>`;
 
-    // 用 XLSX 內建的 JSZip
-    const zip = new JSZip();
-    zip.file('[Content_Types].xml', ctXml);
-    zip.file('_rels/.rels', rootRels);
-    zip.file('word/document.xml', docXml);
-    zip.file('word/_rels/document.xml.rels', relsXml);
-    zip.file('word/styles.xml', stylesXml);
+    // ── 純瀏覽器原生 ZIP 打包 ──
+    const files = {
+      '[Content_Types].xml': ctXml,
+      '_rels/.rels': rootRels,
+      'word/document.xml': docXml,
+      'word/_rels/document.xml.rels': relsXml,
+      'word/styles.xml': stylesXml,
+    };
 
-    const blob = await zip.generateAsync({
-      type:'blob',
-      mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    });
+    // 自製最小 ZIP（stored，不壓縮）
+    function strToBytes(str) {
+      return new TextEncoder().encode(str);
+    }
+    function u32le(n) {
+      const b = new Uint8Array(4);
+      b[0]=n&0xff; b[1]=(n>>8)&0xff; b[2]=(n>>16)&0xff; b[3]=(n>>24)&0xff;
+      return b;
+    }
+    function u16le(n) {
+      return new Uint8Array([n&0xff,(n>>8)&0xff]);
+    }
+    function crc32(data) {
+      let crc = 0xFFFFFFFF;
+      const table = new Uint32Array(256);
+      for(let i=0;i<256;i++){let c=i;for(let j=0;j<8;j++){c=c&1?(0xEDB88320^(c>>>1)):(c>>>1);}table[i]=c;}
+      for(let i=0;i<data.length;i++) crc=table[(crc^data[i])&0xFF]^(crc>>>8);
+      return (crc^0xFFFFFFFF)>>>0;
+    }
+    function concat(...arrays) {
+      const total = arrays.reduce((s,a)=>s+a.length,0);
+      const out = new Uint8Array(total);
+      let off = 0;
+      for(const a of arrays){ out.set(a,off); off+=a.length; }
+      return out;
+    }
+
+    const localHeaders = [];
+    const centralDirs = [];
+    let offset = 0;
+
+    for(const [name, content] of Object.entries(files)) {
+      const nameBytes = new TextEncoder().encode(name);
+      const data = strToBytes(content);
+      const crc = crc32(data);
+      const now = new Date();
+      const dosDate = ((now.getFullYear()-1980)<<9)|(( now.getMonth()+1)<<5)|now.getDate();
+      const dosTime = (now.getHours()<<11)|(now.getMinutes()<<5)|(now.getSeconds()>>1);
+
+      // Local file header
+      const localHeader = concat(
+        new Uint8Array([0x50,0x4B,0x03,0x04]), // signature
+        u16le(20),          // version needed
+        u16le(0),           // flags
+        u16le(0),           // compression (stored)
+        u16le(dosTime), u16le(dosDate),
+        u32le(crc),
+        u32le(data.length), // compressed size
+        u32le(data.length), // uncompressed size
+        u16le(nameBytes.length),
+        u16le(0),           // extra field length
+        nameBytes
+      );
+
+      localHeaders.push(concat(localHeader, data));
+
+      // Central directory entry
+      centralDirs.push(concat(
+        new Uint8Array([0x50,0x4B,0x01,0x02]),
+        u16le(20), u16le(20), u16le(0), u16le(0),
+        u16le(dosTime), u16le(dosDate),
+        u32le(crc),
+        u32le(data.length), u32le(data.length),
+        u16le(nameBytes.length),
+        u16le(0), u16le(0), u16le(0), u16le(0),
+        u32le(0),
+        u32le(offset),
+        nameBytes
+      ));
+
+      offset += localHeader.length + data.length;
+    }
+
+    const centralDirData = concat(...centralDirs);
+    const cdOffset = offset;
+    const eocd = concat(
+      new Uint8Array([0x50,0x4B,0x05,0x06]),
+      u16le(0), u16le(0),
+      u16le(centralDirs.length), u16le(centralDirs.length),
+      u32le(centralDirData.length),
+      u32le(cdOffset),
+      u16le(0)
+    );
+
+    const zipBytes = concat(...localHeaders, centralDirData, eocd);
+    const blob = new Blob([zipBytes], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = `${y}年${month}月_社區培力月報.docx`; a.click();
