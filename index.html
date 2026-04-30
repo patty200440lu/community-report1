@@ -6,6 +6,7 @@
 <title>新北市社區培力育成中心｜成果彙整系統</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
 :root{--bg:#0f1117;--sur:#1a1d27;--sur2:#22263a;--bd:#2e3350;--ac:#4f8ef7;--ac2:#f7a94f;--ac3:#5de3a2;--red:#f75f5f;--tx:#e8eaf6;--mu:#7880a4;}
@@ -138,6 +139,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
     <div class="ni" onclick="showPg('scheme',this)">📋 場次人次登錄</div>
     <div class="nav-lbl" style="margin-top:8px">統計報表</div>
     <div class="ni" onclick="showPg('stats',this)">📈 綜合成果統計</div>
+    <div class="nav-lbl" style="margin-top:8px">匯出</div>
+    <div class="ni" onclick="showPg('word',this)">📄 匯出月報 Word</div>
   </nav>
 
   <main class="main">
@@ -324,6 +327,28 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
         <button class="btn btn-g" onclick="exportExcel()">⬇ 匯出 Excel</button>
       </div>
       <div id="stats-out"><div class="empty">請先登錄資料後點選「重新整理統計」</div></div>
+    </div>
+
+    <!-- 匯出月報 Word -->
+    <div id="pg-word" class="pg">
+      <div class="ptitle">📄 匯出月報 Word</div>
+      <p class="pdesc">選擇月份後產生該月的成果報告 Word 檔，包含訪視統計、社區名單及方案場次</p>
+      <div class="card">
+        <div class="ctitle">選擇匯出月份</div>
+        <div class="fr" style="align-items:flex-end">
+          <div class="fg" style="max-width:120px">
+            <label>月份</label>
+            <select id="word-month">
+              <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+              <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+              <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+              <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+            </select>
+          </div>
+          <button class="btn btn-p" onclick="exportWord()" id="wordBtn">📄 產生並下載 Word</button>
+        </div>
+        <div id="word-preview" style="margin-top:16px"></div>
+      </div>
     </div>
   </main>
 </div>
@@ -800,6 +825,335 @@ function exportExcel(){
   const al1=[['社區名稱','實地訪視','社區聯繫','方案參與','級別評估']];[...allS].sort().forEach(c=>al1.push([c,visitS.has(c)?'✓':'',contactS.has(c)?'✓':'',schemeS.has(c)?'✓':'',levelS.has(c)?'✓':'']));al1.push([`合計：${allS.size} 個（不重複）`,'','','','']);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(al1),'總觸及社區名單');
   XLSX.writeFile(wb,`${y}年新北社區培力育成中心_成果統計.xlsx`);
+}
+
+// ══════════════════════
+// WORD EXPORT
+// ══════════════════════
+async function exportWord(){
+  const month = parseInt(document.getElementById('word-month').value);
+  const y = yr();
+  const btn = document.getElementById('wordBtn');
+  btn.disabled = true; btn.textContent = '產生中...';
+
+  const preview = document.getElementById('word-preview');
+  preview.innerHTML = '<div style="color:var(--mu);font-size:12px">正在準備資料...</div>';
+
+  try {
+    const {
+      Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+      AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType,
+      VerticalAlign, PageNumber, Header, Footer
+    } = docx;
+
+    // ── 收集資料 ──
+    const vp = DB.visitPurpose.find(v => v.month === month);
+    const vcs = DB.visitComms.filter(v => v.month === month).sort((a,b) => a.name.localeCompare(b.name,'zh-TW'));
+    const cp = DB.contactPurpose.find(c => c.month === month);
+    const ccs = DB.contactComms.filter(c => c.month === month).sort((a,b) => a.name.localeCompare(b.name,'zh-TW'));
+    const op = DB.officePurpose.find(o => o.month === month);
+    const ocs = DB.officeComms.filter(o => o.month === month).sort((a,b) => a.name.localeCompare(b.name,'zh-TW'));
+    const schemes = DB.schemes.filter(s => {
+      const d = new Date(s.date);
+      // match year and month (民國年 offset: 115 = 2026)
+      const sYear = d.getFullYear() - 1911;
+      return sYear === parseInt(y) && (d.getMonth()+1) === month;
+    }).sort((a,b) => a.date > b.date ? 1 : -1);
+
+    // ── 樣式設定 ──
+    const border = { style: BorderStyle.SINGLE, size: 1, color: '999999' };
+    const borders = { top: border, bottom: border, left: border, right: border };
+    const hdrBorder = { style: BorderStyle.SINGLE, size: 1, color: '2E75B6' };
+    const hdrBorders = { top: hdrBorder, bottom: hdrBorder, left: hdrBorder, right: hdrBorder };
+    const cellMargin = { top: 80, bottom: 80, left: 120, right: 120 };
+    const W = 9360; // content width DXA (A4 1" margins)
+
+    function hdrCell(text, w) {
+      return new TableCell({
+        borders: hdrBorders,
+        width: { size: w, type: WidthType.DXA },
+        shading: { fill: 'D6E4F7', type: ShadingType.CLEAR },
+        margins: cellMargin,
+        verticalAlign: VerticalAlign.CENTER,
+        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text, bold: true, size: 22, font: '新細明體' })] })]
+      });
+    }
+    function dataCell(text, w, align = AlignmentType.CENTER) {
+      return new TableCell({
+        borders,
+        width: { size: w, type: WidthType.DXA },
+        margins: cellMargin,
+        verticalAlign: VerticalAlign.CENTER,
+        children: [new Paragraph({ alignment: align, children: [new TextRun({ text: String(text ?? '-'), size: 22, font: '新細明體' })] })]
+      });
+    }
+    function heading1(text) {
+      return new Paragraph({
+        spacing: { before: 300, after: 120 },
+        children: [new TextRun({ text, bold: true, size: 28, color: '1F3864', font: '新細明體' })]
+      });
+    }
+    function heading2(text) {
+      return new Paragraph({
+        spacing: { before: 200, after: 80 },
+        children: [new TextRun({ text, bold: true, size: 24, color: '2E75B6', font: '新細明體' })]
+      });
+    }
+    function para(text, opts={}) {
+      return new Paragraph({
+        spacing: { before: 60, after: 60 },
+        children: [new TextRun({ text, size: 22, font: '新細明體', ...opts })]
+      });
+    }
+    function emptyPara() { return new Paragraph({ children: [new TextRun('')] }); }
+
+    const children = [];
+
+    // ── 標題 ──
+    children.push(new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 0, after: 300 },
+      children: [new TextRun({ text: `${y}年 ${month}月 社區培力育成中心 月報`, bold: true, size: 36, font: '新細明體' })]
+    }));
+
+    // ══════════════════
+    // 一、實地輔導
+    // ══════════════════
+    children.push(heading1('一、實地輔導'));
+
+    // 1-1 目的統計
+    children.push(heading2('（一）訪視目的統計'));
+    if (vp) {
+      const vpKeys = [['中心簡介','intro'],['社區評估','eval'],['技術指導','tech'],['團隊建置','team'],['情緒支持','emo'],['其他','other']];
+      const total = vpKeys.reduce((s,[,k]) => s + (vp[k]||0), 0);
+      const colW = Math.floor(W / (vpKeys.length + 1));
+      children.push(new Table({
+        width: { size: W, type: WidthType.DXA },
+        columnWidths: Array(vpKeys.length + 1).fill(colW),
+        rows: [
+          new TableRow({ children: [hdrCell('項目', colW), ...vpKeys.map(([l]) => hdrCell(l, colW))] }),
+          new TableRow({ children: [hdrCell('次數', colW), ...vpKeys.map(([,k]) => dataCell(vp[k]||0, colW))] }),
+        ]
+      }));
+      children.push(para(`合計：${total} 次`, { bold: true }));
+    } else {
+      children.push(para('（本月無資料）', { color: '999999' }));
+    }
+
+    children.push(emptyPara());
+
+    // 1-2 社區名單
+    children.push(heading2('（二）訪視社區名單'));
+    if (vcs.length > 0) {
+      const totalCnt = vcs.reduce((s,v) => s + v.cnt, 0);
+      const totalPpl = vcs.reduce((s,v) => s + v.ppl, 0);
+      const [c1,c2,c3] = [Math.floor(W*0.5), Math.floor(W*0.25), Math.floor(W*0.25)];
+      children.push(new Table({
+        width: { size: W, type: WidthType.DXA },
+        columnWidths: [c1, c2, c3],
+        rows: [
+          new TableRow({ children: [hdrCell('社區名稱', c1), hdrCell('訪視次數', c2), hdrCell('受益人次', c3)] }),
+          ...vcs.map(v => new TableRow({ children: [dataCell(v.name, c1, AlignmentType.LEFT), dataCell(v.cnt, c2), dataCell(v.ppl, c3)] })),
+          new TableRow({ tableHeader: true, children: [hdrCell(`合計（${vcs.length} 個社區）`, c1), hdrCell(totalCnt, c2), hdrCell(totalPpl, c3)] }),
+        ]
+      }));
+    } else {
+      children.push(para('（本月無資料）', { color: '999999' }));
+    }
+
+    children.push(emptyPara());
+
+    // ══════════════════
+    // 二、聯繫輔導（社區）
+    // ══════════════════
+    children.push(heading1('二、聯繫輔導（社區）'));
+
+    children.push(heading2('（一）聯繫目的統計'));
+    if (cp) {
+      const cpKeys = [['訪視邀約','visit'],['資源連結','res'],['社區評估','eval'],['課程邀約','course'],['情緒支持','emo'],['計畫討論','plan'],['專案輔導','proj'],['社區諮詢','consult']];
+      const total = cpKeys.reduce((s,[,k]) => s + (cp[k]||0), 0);
+      // split into 2 rows of 4
+      const half = Math.floor(cpKeys.length / 2);
+      const colW = Math.floor(W / (half + 1));
+      const makeRow = (slice) => [
+        new TableRow({ children: [hdrCell('項目', colW), ...slice.map(([l]) => hdrCell(l, colW))] }),
+        new TableRow({ children: [hdrCell('次數', colW), ...slice.map(([,k]) => dataCell(cp[k]||0, colW))] }),
+      ];
+      children.push(new Table({
+        width: { size: W, type: WidthType.DXA },
+        columnWidths: Array(half + 1).fill(colW),
+        rows: [...makeRow(cpKeys.slice(0, half)), ...makeRow(cpKeys.slice(half))]
+      }));
+      children.push(para(`合計：${total} 次`, { bold: true }));
+    } else {
+      children.push(para('（本月無資料）', { color: '999999' }));
+    }
+
+    children.push(emptyPara());
+
+    children.push(heading2('（二）聯繫社區名單'));
+    if (ccs.length > 0) {
+      // display as 3-column list
+      const cols = 3;
+      const colW = Math.floor(W / cols);
+      const rows = [];
+      for (let i = 0; i < ccs.length; i += cols) {
+        const slice = ccs.slice(i, i + cols);
+        while (slice.length < cols) slice.push(null);
+        rows.push(new TableRow({ children: slice.map(c => dataCell(c ? c.name : '', colW, AlignmentType.LEFT)) }));
+      }
+      children.push(new Table({
+        width: { size: W, type: WidthType.DXA },
+        columnWidths: Array(cols).fill(colW),
+        rows: [new TableRow({ children: Array(cols).fill(null).map((_,i) => hdrCell(`社區名稱（${i===0?'一':'二'===String(i)?'二':'三'}）`, colW)) }), ...rows]
+      }));
+      children.push(para(`不重複社區數：${new Set(ccs.map(c=>c.name)).size} 個`, { bold: true }));
+    } else {
+      children.push(para('（本月無資料）', { color: '999999' }));
+    }
+
+    children.push(emptyPara());
+
+    // ══════════════════
+    // 三、聯繫輔導（公所）
+    // ══════════════════
+    children.push(heading1('三、聯繫輔導（公所）'));
+
+    children.push(heading2('（一）聯繫目的統計'));
+    if (op) {
+      const opKeys = [['訪視邀約','visit'],['資源連結','res'],['概況討論','overview'],['課程邀約','course'],['情緒支持','emo'],['計畫討論','plan'],['其他','other']];
+      const total = opKeys.reduce((s,[,k]) => s + (op[k]||0), 0);
+      const colW = Math.floor(W / (opKeys.length + 1));
+      children.push(new Table({
+        width: { size: W, type: WidthType.DXA },
+        columnWidths: Array(opKeys.length + 1).fill(colW),
+        rows: [
+          new TableRow({ children: [hdrCell('項目', colW), ...opKeys.map(([l]) => hdrCell(l, colW))] }),
+          new TableRow({ children: [hdrCell('次數', colW), ...opKeys.map(([,k]) => dataCell(op[k]||0, colW))] }),
+        ]
+      }));
+      children.push(para(`合計：${total} 次`, { bold: true }));
+    } else {
+      children.push(para('（本月無資料）', { color: '999999' }));
+    }
+
+    children.push(emptyPara());
+
+    children.push(heading2('（二）聯繫公所名單'));
+    if (ocs.length > 0) {
+      const cols = 4;
+      const colW = Math.floor(W / cols);
+      const rows = [];
+      for (let i = 0; i < ocs.length; i += cols) {
+        const slice = ocs.slice(i, i + cols);
+        while (slice.length < cols) slice.push(null);
+        rows.push(new TableRow({ children: slice.map(o => dataCell(o ? o.name : '', colW, AlignmentType.LEFT)) }));
+      }
+      children.push(new Table({
+        width: { size: W, type: WidthType.DXA },
+        columnWidths: Array(cols).fill(colW),
+        rows: [new TableRow({ children: Array(cols).fill(null).map(() => hdrCell('行政區', colW)) }), ...rows]
+      }));
+      children.push(para(`不重複行政區數：${new Set(ocs.map(o=>o.name)).size} 個`, { bold: true }));
+    } else {
+      children.push(para('（本月無資料）', { color: '999999' }));
+    }
+
+    children.push(emptyPara());
+
+    // ══════════════════
+    // 四、方案辦理場次
+    // ══════════════════
+    children.push(heading1('四、方案辦理場次'));
+    if (schemes.length > 0) {
+      const countKeys = ['cadre','vol','other','officer','mgr','staff'];
+      const countLabels = ['社區幹部','志工','其他居民','公所承辦','公所主管','工作人員'];
+      // widths
+      const nameW = 2200, dateW = 1000, catW = 1100, pplW = 600, totalW = 700, commsW = 2560;
+      const cols = [nameW, dateW, catW, ...Array(6).fill(pplW), totalW, commsW];
+      const hdrRow = new TableRow({ children: [
+        hdrCell('活動名稱', nameW), hdrCell('日期', dateW), hdrCell('類別', catW),
+        ...countLabels.map(l => hdrCell(l, pplW)),
+        hdrCell('合計', totalW), hdrCell('參與社區', commsW)
+      ]});
+
+      const dataRows = schemes.map(s => {
+        const tot = Object.values(s.counts).reduce((a,b)=>a+b,0);
+        return new TableRow({ children: [
+          dataCell(s.name, nameW, AlignmentType.LEFT),
+          dataCell(s.date.replace(/(\d{4})-(\d{2})-(\d{2})/,(_,y,m,d)=>`${parseInt(y)-1911}/${m}/${d}`), dateW),
+          dataCell(s.cat, catW, AlignmentType.LEFT),
+          ...countKeys.map(k => dataCell(s.counts[k]||0, pplW)),
+          dataCell(tot, totalW),
+          dataCell(s.comms.length ? s.comms.join('、') : '-', commsW, AlignmentType.LEFT),
+        ]});
+      });
+
+      // totals row
+      const totals = { cadre:0, vol:0, other:0, officer:0, mgr:0, staff:0 };
+      schemes.forEach(s => countKeys.forEach(k => totals[k] += s.counts[k]));
+      const grandTotal = Object.values(totals).reduce((a,b)=>a+b,0);
+      const totalRow = new TableRow({ children: [
+        hdrCell(`合計（${schemes.length} 場）`, nameW+dateW+catW),
+        ...countKeys.map(k => hdrCell(totals[k], pplW)),
+        hdrCell(grandTotal, totalW),
+        hdrCell('', commsW),
+      ]});
+
+      children.push(new Table({
+        width: { size: W, type: WidthType.DXA },
+        columnWidths: cols,
+        rows: [hdrRow, ...dataRows, totalRow]
+      }));
+    } else {
+      children.push(para('（本月無方案場次）', { color: '999999' }));
+    }
+
+    // ── 產生檔案 ──
+    const doc = new Document({
+      styles: {
+        default: { document: { run: { font: '新細明體', size: 22 } } }
+      },
+      sections: [{
+        properties: {
+          page: {
+            size: { width: 11906, height: 16838 },
+            margin: { top: 1440, right: 1080, bottom: 1440, left: 1440 }
+          }
+        },
+        headers: {
+          default: new Header({ children: [new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: '2E75B6' } },
+            children: [new TextRun({ text: `新北市社區培力育成中心　${y}年${month}月月報`, size: 18, color: '666666', font: '新細明體' })]
+          })] })
+        },
+        footers: {
+          default: new Footer({ children: [new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: '第 ', size: 18, color: '999999' }), new TextRun({ children: [PageNumber.CURRENT], size: 18, color: '999999' }), new TextRun({ text: ' 頁', size: 18, color: '999999' })]
+          })] })
+        },
+        children
+      }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${y}年${month}月_社區培力月報.docx`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    preview.innerHTML = `<div style="color:var(--ac3);font-size:13px">✅ 已產生 <strong>${y}年${month}月_社區培力月報.docx</strong>，請查看下載資料夾</div>`;
+
+  } catch(e) {
+    preview.innerHTML = `<div style="color:var(--red);font-size:13px">❌ 產生失敗：${e.message}</div>`;
+    console.error(e);
+  }
+
+  btn.disabled = false; btn.textContent = '📄 產生並下載 Word';
 }
 
 loadAll();
