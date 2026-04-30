@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>新北市社區培力育成中心｜成果彙整系統</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
 :root{--bg:#0f1117;--sur:#1a1d27;--sur2:#22263a;--bd:#2e3350;--ac:#4f8ef7;--ac2:#f7a94f;--ac3:#5de3a2;--red:#f75f5f;--tx:#e8eaf6;--mu:#7880a4;}
@@ -491,7 +491,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
 // ── Supabase ──
 const SUPA_URL='https://yrqzaxhdssihuwimzxcx.supabase.co';
 const SUPA_KEY='sb_publishable_wvT5p3N2IPOUTf8QYtXv6Q_IT02OPtI';
-const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+const _supaLib = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
+const sb = _supaLib ? _supaLib.createClient(SUPA_URL, SUPA_KEY) : null;
 
 // ── Local cache ──
 const DB={visitPurpose:[],visitComms:[],contactPurpose:[],contactComms:[],officePurpose:[],officeComms:[],levels:[],schemes:[]};
@@ -525,20 +526,32 @@ const SCT=TagInp('sc-tw','sc-ti');
 async function loadAll(){
   showLoading('連線 Supabase 中...');
   try{
+    if(!sb) throw new Error('Supabase 套件未載入，請確認網路連線後重新整理');
     const tables={
-      visitPurpose:'visit_purpose',visitComms:'visit_comms',
-      contactPurpose:'contact_purpose',contactComms:'contact_comms',
-      officePurpose:'office_purpose',officeComms:'office_comms',
-      levels:'levels',schemes:'schemes'
+      visitPurpose:'visit_purpose', visitComms:'visit_comms',
+      contactPurpose:'contact_purpose', contactComms:'contact_comms',
+      officePurpose:'office_purpose', officeComms:'office_comms',
+      levels:'levels', schemes:'schemes'
     };
-    await Promise.all(Object.entries(tables).map(async([key,tbl])=>{
+    // 逐一載入避免 DataCloneError
+    for(const [key,tbl] of Object.entries(tables)){
       const{data,error}=await sb.from(tbl).select('*').order('id');
-      if(!error&&data) DB[key]=data;
+      if(error) throw new Error(`載入 ${tbl} 失敗：${error.message}`);
+      if(data) DB[key]=data;
+    }
+    DB.schemes=DB.schemes.map(s=>({...s,
+      comms:s.comms?s.comms.split('|||').filter(Boolean):[],
+      counts:{cadre:s.cadre,vol:s.vol,other:s.other_count,officer:s.officer,mgr:s.mgr,staff:s.staff}
     }));
-    // convert schemes comms from string to array
-    DB.schemes=DB.schemes.map(s=>({...s,comms:s.comms?s.comms.split('|||').filter(Boolean):[],counts:{cadre:s.cadre,vol:s.vol,other:s.other_count,officer:s.officer,mgr:s.mgr,staff:s.staff}}));
-    renderAll();setBadge('saved','已連線');
-  }catch(e){setBadge('error','連線失敗');}
+    renderAll();
+    setBadge('saved','已連線');
+  }catch(e){
+    console.error('loadAll error:', e);
+    setBadge('error','連線失敗：'+e.message);
+    document.getElementById('loadingText').textContent = '❌ ' + e.message;
+    setTimeout(hideLoading, 5000);
+    return;
+  }
   hideLoading();
 }
 
