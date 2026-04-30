@@ -7,6 +7,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+<script>
+// docx CDN 在瀏覽器裡掛在 window.docx
+function getDocx(){ return window.docx || window.Document && window; }
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
 :root{--bg:#0f1117;--sur:#1a1d27;--sur2:#22263a;--bd:#2e3350;--ac:#4f8ef7;--ac2:#f7a94f;--ac3:#5de3a2;--red:#f75f5f;--tx:#e8eaf6;--mu:#7880a4;}
@@ -840,11 +844,14 @@ async function exportWord(){
   preview.innerHTML = '<div style="color:var(--mu);font-size:12px">正在準備資料...</div>';
 
   try {
+    // ── 取得 docx 模組 ──
+    const docxLib = window.docx;
+    if (!docxLib) throw new Error('docx 套件載入失敗，請重新整理頁面再試');
     const {
       Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
       AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType,
       VerticalAlign, PageNumber, Header, Footer
-    } = docx;
+    } = docxLib;
 
     // ── 收集資料 ──
     const vp = DB.visitPurpose.find(v => v.month === month);
