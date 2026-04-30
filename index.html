@@ -147,38 +147,37 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
     <!-- 實地輔導 -->
     <div id="pg-visit" class="pg on">
       <div class="ptitle">🚶 實地輔導</div>
-      <p class="pdesc">目的統計填寫該月各目的的訪視次數；社區名單則逐筆登錄每個社區的次數與受益人次</p>
-      <div class="tab-row">
-        <button class="tb on" onclick="switchTab('visit','purpose',this)">目的統計</button>
-        <button class="tb" onclick="switchTab('visit','comm',this)">社區名單</button>
-      </div>
-      <div id="visit-purpose">
+      <p class="pdesc">批次填寫訪視紀錄，每筆包含日期、社區、主責人員、目的、次數與人次</p>
+      <div id="visit-purpose" style="display:none"></div>
+      <div id="visit-comm">
+        <!-- 批次快速輸入 -->
         <div class="card">
-          <div class="ctitle">各月目的次數登錄</div>
-          <div class="fr"><div class="fg" style="max-width:110px"><label>月份</label><select id="vp-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div></div>
-          <div class="pgrid">
-            <div class="pitem"><label>中心簡介</label><input type="number" id="vp-intro" min="0" value="0"></div>
-            <div class="pitem"><label>社區評估</label><input type="number" id="vp-eval" min="0" value="0"></div>
-            <div class="pitem"><label>技術指導</label><input type="number" id="vp-tech" min="0" value="0"></div>
-            <div class="pitem"><label>團隊建置</label><input type="number" id="vp-team" min="0" value="0"></div>
-            <div class="pitem"><label>情緒支持</label><input type="number" id="vp-emo" min="0" value="0"></div>
-            <div class="pitem"><label>其他</label><input type="number" id="vp-other" min="0" value="0"></div>
+          <div class="ctitle">快速批次輸入訪視紀錄</div>
+          <div class="notice"><strong>使用方式：</strong>直接在下方表格填寫，空白列會自動略過，填完按「全部儲存」一次上傳。</div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse" id="batch-table">
+              <thead>
+                <tr style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em">
+                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:40px">#</th>
+                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:110px">日期</th>
+                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:90px">月份</th>
+                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:140px">社區名稱</th>
+                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:90px">主責人員</th>
+                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:110px">訪視目的</th>
+                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:70px">次數</th>
+                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:70px">人次</th>
+                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);width:32px"></th>
+                </tr>
+              </thead>
+              <tbody id="batch-body"></tbody>
+            </table>
           </div>
-          <button class="btn btn-p" onclick="saveVP()">💾 儲存本月目的統計</button>
-        </div>
-        <div class="card"><div class="ctitle">目的統計列表</div><div id="vp-list"><div class="empty">載入中...</div></div></div>
-      </div>
-      <div id="visit-comm" style="display:none">
-        <div class="card">
-          <div class="ctitle">新增訪視社區</div>
-          <div class="fr">
-            <div class="fg" style="max-width:110px"><label>月份</label><select id="vc-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
-            <div class="fg"><label>社區名稱</label><input type="text" id="vc-name" placeholder="例：新店中山社區"></div>
-            <div class="fg" style="max-width:100px"><label>訪視次數</label><input type="number" id="vc-cnt" min="1" value="1"></div>
-            <div class="fg" style="max-width:100px"><label>受益人次</label><input type="number" id="vc-ppl" min="0" value="0"></div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <button class="btn btn-p btn-sm" onclick="addBatchRow()">＋ 新增一行</button>
+            <button class="btn btn-g" onclick="saveBatch()" id="batchSaveBtn">✓ 全部儲存</button>
           </div>
-          <button class="btn btn-p" onclick="addVC()">＋ 新增社區</button>
         </div>
+        <!-- 既有紀錄列表 -->
         <div class="card"><div class="ctitle">訪視社區名單</div><div id="vc-list"><div class="empty">載入中...</div></div></div>
       </div>
     </div>
@@ -373,10 +372,25 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
   <div class="modal-title">✏️ 編輯訪視社區</div>
   <input type="hidden" id="edit-vc-id">
   <div class="fr">
-    <div class="fg" style="max-width:110px"><label>月份</label><select id="edit-vc-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
+    <div class="fg" style="max-width:130px"><label>日期</label><input type="date" id="edit-vc-date"></div>
+    <div class="fg" style="max-width:100px"><label>月份</label><select id="edit-vc-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
     <div class="fg"><label>社區名稱</label><input type="text" id="edit-vc-name"></div>
-    <div class="fg" style="max-width:100px"><label>訪視次數</label><input type="number" id="edit-vc-cnt" min="1"></div>
-    <div class="fg" style="max-width:100px"><label>受益人次</label><input type="number" id="edit-vc-ppl" min="0"></div>
+  </div>
+  <div class="fr">
+    <div class="fg" style="max-width:130px"><label>主責人員</label>
+      <select id="edit-vc-staff">
+        <option value="治漢">治漢</option><option value="筱輝">筱輝</option>
+        <option value="海文">海文</option><option value="詣涵">詣涵</option><option value="意淳">意淳</option>
+      </select>
+    </div>
+    <div class="fg" style="max-width:130px"><label>訪視目的</label>
+      <select id="edit-vc-purpose">
+        <option>技術指導</option><option>社區評估</option><option>中心簡介</option>
+        <option>團隊建置</option><option>情緒支持</option><option>其他</option>
+      </select>
+    </div>
+    <div class="fg" style="max-width:90px"><label>訪視次數</label><input type="number" id="edit-vc-cnt" min="1"></div>
+    <div class="fg" style="max-width:90px"><label>受益人次</label><input type="number" id="edit-vc-ppl" min="0"></div>
   </div>
   <div class="modal-footer"><button class="btn btn-d btn-sm" onclick="closeModal('modal-vc')">取消</button><button class="btn btn-p" onclick="saveEditVC()">💾 儲存</button></div>
 </div></div>
@@ -528,7 +542,7 @@ async function loadAll(){
   hideLoading();
 }
 
-function renderAll(){renderVP();renderVC();renderCP();renderCC();renderOP();renderOC();renderLV();renderSC();}
+function renderAll(){renderVP();renderVC();renderCP();renderCC();renderOP();renderOC();renderLV();renderSC();initBatchRows();}
 
 // ══════════════════════
 // VISIT PURPOSE
@@ -566,27 +580,158 @@ async function saveEditVP(){
 }
 
 // ══════════════════════
+// BATCH INPUT (實地輔導)
+// ══════════════════════
+const STAFF_LIST = ['治漢','筱輝','海文','詣涵','意淳'];
+const PURPOSE_LIST = ['技術指導','社區評估','中心簡介','團隊建置','情緒支持','其他'];
+
+function batchRowHTML(i) {
+  const moOpts = Array.from({length:12},(_,j)=>`<option value="${j+1}">${j+1}月</option>`).join('');
+  const staffOpts = STAFF_LIST.map(s=>`<option>${s}</option>`).join('');
+  const purpOpts = PURPOSE_LIST.map(p=>`<option>${p}</option>`).join('');
+  const inp = `background:var(--sur2);border:1px solid var(--bd);border-radius:6px;padding:5px 7px;color:var(--tx);font-size:12px;font-family:'Noto Sans TC',sans-serif;outline:none;width:100%`;
+  return `<tr id="brow-${i}" style="border-bottom:1px solid rgba(46,51,80,.3)">
+    <td style="padding:4px 4px;font-size:11px;color:var(--mu);text-align:center">${i+1}</td>
+    <td style="padding:4px"><input type="date" style="${inp}" class="br-date"></td>
+    <td style="padding:4px"><select style="${inp}" class="br-month">${moOpts}</select></td>
+    <td style="padding:4px"><input type="text" style="${inp}" class="br-name" placeholder="社區名稱"></td>
+    <td style="padding:4px"><select style="${inp}" class="br-staff">${staffOpts}</select></td>
+    <td style="padding:4px"><select style="${inp}" class="br-purpose">${purpOpts}</select></td>
+    <td style="padding:4px"><input type="number" style="${inp};font-family:'DM Mono',monospace" class="br-cnt" value="1" min="1"></td>
+    <td style="padding:4px"><input type="number" style="${inp};font-family:'DM Mono',monospace" class="br-ppl" value="0" min="0"></td>
+    <td style="padding:4px;text-align:center"><span style="cursor:pointer;color:var(--red);font-size:16px" onclick="removeBatchRow(${i})">×</span></td>
+  </tr>`;
+}
+
+let batchRowCount = 0;
+function initBatchRows(n=5) {
+  const tbody = document.getElementById('batch-body');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  batchRowCount = 0;
+  for(let i=0;i<n;i++) addBatchRow();
+}
+function addBatchRow() {
+  const tbody = document.getElementById('batch-body');
+  if(!tbody) return;
+  const div = document.createElement('tbody');
+  div.innerHTML = batchRowHTML(batchRowCount);
+  tbody.appendChild(div.firstChild);
+  const row = document.getElementById(`brow-${batchRowCount}`);
+  if(row) row.querySelector('.br-date').addEventListener('change', function(){
+    const d = new Date(this.value);
+    if(!isNaN(d)) row.querySelector('.br-month').value = d.getMonth()+1;
+  });
+  batchRowCount++;
+}
+function removeBatchRow(i) {
+  const row = document.getElementById(`brow-${i}`);
+  if(row) row.remove();
+}
+async function saveBatch() {
+  const rows = document.querySelectorAll('#batch-body tr');
+  const btn = document.getElementById('batchSaveBtn');
+  const toSave = [];
+  rows.forEach(row => {
+    const name = row.querySelector('.br-name')?.value.trim();
+    if(!name) return;
+    toSave.push({
+      id: Date.now() + Math.random(),
+      date: row.querySelector('.br-date')?.value || '',
+      month: parseInt(row.querySelector('.br-month')?.value) || 1,
+      name,
+      staff_name: row.querySelector('.br-staff')?.value || '',
+      purpose: row.querySelector('.br-purpose')?.value || '技術指導',
+      cnt: parseInt(row.querySelector('.br-cnt')?.value) || 1,
+      ppl: parseInt(row.querySelector('.br-ppl')?.value) || 0,
+    });
+  });
+  if(!toSave.length){ alert('沒有需要儲存的資料（請確認社區名稱欄位已填寫）'); return; }
+  btn.disabled=true; btn.textContent='儲存中...'; setBadge('saving','儲存中...');
+  let ok=0, fail=0;
+  for(const rec of toSave) {
+    const {error} = await sb.from('visit_comms').insert(rec);
+    if(error){ fail++; console.error(error); } else { DB.visitComms.push(rec); ok++; }
+  }
+  setBadge(fail?'error':'saved', fail?`${fail}筆失敗`:'已同步');
+  btn.disabled=false; btn.textContent='✓ 全部儲存';
+  alert(`✅ 成功儲存 ${ok} 筆${fail?`，${fail} 筆失敗`:''}！`);
+  initBatchRows();
+  renderVC();
+}
+
+// ══════════════════════
 // VISIT COMMS
 // ══════════════════════
-async function addVC(){
-  const month=nv('vc-month');const name=document.getElementById('vc-name').value.trim();const cnt=nv('vc-cnt')||1;const ppl=nv('vc-ppl');
-  if(!name){alert('請填寫社區名稱');return;}
-  const existing=DB.visitComms.find(v=>v.month===month&&v.name===name);
-  if(existing){if(!confirm(`${month}月的「${name}」已存在，是否更新？`))return;setBadge('saving','儲存中...');await sb.from('visit_comms').update({cnt,ppl}).eq('id',existing.id);const idx=DB.visitComms.findIndex(v=>v.id===existing.id);if(idx>-1)DB.visitComms[idx]={...existing,cnt,ppl};setBadge('saved','已同步');}
-  else{const data={id:Date.now(),month,name,cnt,ppl};setBadge('saving','儲存中...');const{error}=await sb.from('visit_comms').insert(data);if(error){setBadge('error','儲存失敗');return;}DB.visitComms.push(data);setBadge('saved','已同步');}
-  document.getElementById('vc-name').value='';document.getElementById('vc-cnt').value=1;document.getElementById('vc-ppl').value=0;renderVC();
+async function addVC(){ /* 已改用 batch */ }
+async function delVC(id){
+  if(!confirm('確定刪除？'))return;
+  setBadge('saving','儲存中...');
+  await sb.from('visit_comms').delete().eq('id',id);
+  DB.visitComms=DB.visitComms.filter(v=>v.id!==id);
+  setBadge('saved','已同步'); renderVC();
 }
-async function delVC(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('visit_comms').delete().eq('id',id);DB.visitComms=DB.visitComms.filter(v=>v.id!==id);setBadge('saved','已同步');renderVC();}
 function renderVC(){
-  const el=document.getElementById('vc-list');if(!DB.visitComms.length){el.innerHTML='<div class="empty">尚未登錄任何社區</div>';return;}
-  const s=[...DB.visitComms].sort((a,b)=>a.month!==b.month?a.month-b.month:a.name.localeCompare(b.name,'zh-TW'));
-  el.innerHTML=`<table class="tbl"><thead><tr><th>月份</th><th>社區名稱</th><th>訪視次數</th><th>受益人次</th><th></th></tr></thead><tbody>`+s.map(v=>`<tr><td style="font-family:'DM Mono',monospace">${yr()}年${v.month}月</td><td style="font-weight:600">${v.name}</td><td style="text-align:center"><span class="bdg bb">${v.cnt}</span></td><td style="text-align:center"><span class="bdg bg">${v.ppl}</span></td><td style="white-space:nowrap"><button class="btn btn-e btn-sm" onclick="editVC(${v.id})" style="margin-right:4px">編輯</button><button class="btn btn-d btn-sm" onclick="delVC(${v.id})">刪</button></td></tr>`).join('')+`</tbody><tfoot><tr style="background:rgba(79,142,247,.05)"><td colspan="2" style="font-weight:700">累計（${new Set(DB.visitComms.map(v=>v.name)).size}個社區）</td><td style="text-align:center;font-weight:700;color:var(--ac);font-family:'DM Mono',monospace">${DB.visitComms.reduce((s,v)=>s+v.cnt,0)}</td><td style="text-align:center;font-weight:700;color:var(--ac3);font-family:'DM Mono',monospace">${DB.visitComms.reduce((s,v)=>s+v.ppl,0)}</td><td></td></tr></tfoot></table>`;
+  const el=document.getElementById('vc-list');
+  if(!DB.visitComms.length){el.innerHTML='<div class="empty">尚未登錄任何社區</div>';return;}
+  const s=[...DB.visitComms].sort((a,b)=>{
+    if(a.month!==b.month) return a.month-b.month;
+    if(a.date&&b.date) return a.date>b.date?1:-1;
+    return a.name.localeCompare(b.name,'zh-TW');
+  });
+  el.innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr>
+    <th>月份</th><th>日期</th><th>社區名稱</th><th>主責人員</th><th>訪視目的</th><th>次數</th><th>人次</th><th></th>
+  </tr></thead><tbody>`+
+  s.map(v=>`<tr>
+    <td style="font-family:'DM Mono',monospace">${yr()}年${v.month}月</td>
+    <td style="font-family:'DM Mono',monospace;font-size:11px">${v.date||'-'}</td>
+    <td style="font-weight:600">${v.name}</td>
+    <td><span class="bdg bo">${v.staff_name||'-'}</span></td>
+    <td><span class="bdg bb">${v.purpose||'-'}</span></td>
+    <td style="text-align:center"><span class="bdg bb">${v.cnt}</span></td>
+    <td style="text-align:center"><span class="bdg bg">${v.ppl}</span></td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-e btn-sm" onclick="editVC(${v.id})" style="margin-right:4px">編輯</button>
+      <button class="btn btn-d btn-sm" onclick="delVC(${v.id})">刪</button>
+    </td>
+  </tr>`).join('')+
+  `</tbody><tfoot><tr style="background:rgba(79,142,247,.05)">
+    <td colspan="5" style="font-weight:700">累計（${new Set(DB.visitComms.map(v=>v.name)).size} 個社區）</td>
+    <td style="text-align:center;font-weight:700;color:var(--ac);font-family:'DM Mono',monospace">${DB.visitComms.reduce((s,v)=>s+v.cnt,0)}</td>
+    <td style="text-align:center;font-weight:700;color:var(--ac3);font-family:'DM Mono',monospace">${DB.visitComms.reduce((s,v)=>s+v.ppl,0)}</td>
+    <td></td>
+  </tr></tfoot></table></div>`;
 }
-function editVC(id){const r=DB.visitComms.find(v=>v.id===id);if(!r)return;document.getElementById('edit-vc-id').value=id;document.getElementById('edit-vc-month').value=r.month;document.getElementById('edit-vc-name').value=r.name;document.getElementById('edit-vc-cnt').value=r.cnt;document.getElementById('edit-vc-ppl').value=r.ppl;openModal('modal-vc');}
+function editVC(id){
+  const r=DB.visitComms.find(v=>v.id===id);if(!r)return;
+  document.getElementById('edit-vc-id').value=id;
+  document.getElementById('edit-vc-date').value=r.date||'';
+  document.getElementById('edit-vc-month').value=r.month;
+  document.getElementById('edit-vc-name').value=r.name;
+  document.getElementById('edit-vc-staff').value=r.staff_name||'治漢';
+  document.getElementById('edit-vc-purpose').value=r.purpose||'技術指導';
+  document.getElementById('edit-vc-cnt').value=r.cnt;
+  document.getElementById('edit-vc-ppl').value=r.ppl;
+  openModal('modal-vc');
+}
 async function saveEditVC(){
-  const id=+document.getElementById('edit-vc-id').value;const upd={month:+document.getElementById('edit-vc-month').value,name:document.getElementById('edit-vc-name').value.trim(),cnt:+document.getElementById('edit-vc-cnt').value||1,ppl:+document.getElementById('edit-vc-ppl').value||0};
-  if(!upd.name){alert('請填寫社區名稱');return;}setBadge('saving','儲存中...');const{error}=await sb.from('visit_comms').update(upd).eq('id',id);
-  if(error){setBadge('error','儲存失敗');return;}const idx=DB.visitComms.findIndex(v=>v.id===id);if(idx>-1)DB.visitComms[idx]={...DB.visitComms[idx],...upd};setBadge('saved','已同步');closeModal('modal-vc');renderVC();
+  const id=+document.getElementById('edit-vc-id').value;
+  const upd={
+    date:document.getElementById('edit-vc-date').value,
+    month:+document.getElementById('edit-vc-month').value,
+    name:document.getElementById('edit-vc-name').value.trim(),
+    staff_name:document.getElementById('edit-vc-staff').value,
+    purpose:document.getElementById('edit-vc-purpose').value,
+    cnt:+document.getElementById('edit-vc-cnt').value||1,
+    ppl:+document.getElementById('edit-vc-ppl').value||0,
+  };
+  if(!upd.name){alert('請填寫社區名稱');return;}
+  setBadge('saving','儲存中...');
+  const{error}=await sb.from('visit_comms').update(upd).eq('id',id);
+  if(error){setBadge('error','儲存失敗');return;}
+  const idx=DB.visitComms.findIndex(v=>v.id===id);
+  if(idx>-1)DB.visitComms[idx]={...DB.visitComms[idx],...upd};
+  setBadge('saved','已同步');closeModal('modal-vc');renderVC();
 }
 
 // ══════════════════════
@@ -776,9 +921,41 @@ function refreshStats(){
   function bars(tot,map,color){const total=Object.values(tot).reduce((a,b)=>a+b,0);if(!total)return'<div style="color:var(--mu);font-size:12px">尚無資料</div>';return Object.entries(tot).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="bar-row"><div class="bar-lbl">${map[k]}</div><div class="bar-tr"><div class="bar-fi" style="width:${Math.round(v/total*100)}%;background:${color}"></div></div><div class="bar-n" style="color:${color}">${v}</div></div>`).join('');}
   let visitCommTable='<div class="empty">尚未登錄任何訪視社區</div>';
   if(DB.visitComms.length){const commMap={};DB.visitComms.forEach(v=>{if(!commMap[v.name])commMap[v.name]={cnt:0,ppl:0,months:[]};commMap[v.name].cnt+=v.cnt;commMap[v.name].ppl+=v.ppl;commMap[v.name].months.push(v.month);});const maxCnt=Math.max(...Object.values(commMap).map(m=>m.cnt),1);const sorted=Object.entries(commMap).sort((a,b)=>b[1].cnt-a[1].cnt);const tCnt=sorted.reduce((s,[,m])=>s+m.cnt,0);const tPpl=sorted.reduce((s,[,m])=>s+m.ppl,0);visitCommTable=`<table class="tbl"><thead><tr><th>#</th><th>社區名稱</th><th>訪視次數</th><th>次數分佈</th><th>受益人次</th><th>訪視月份</th></tr></thead><tbody>`+sorted.map(([name,m],i)=>`<tr><td style="text-align:center;color:var(--mu);font-family:'DM Mono',monospace">${i+1}</td><td style="font-weight:600">${name}</td><td style="text-align:center"><span class="bdg bb">${m.cnt}</span></td><td style="min-width:80px"><div class="bar-tr" style="height:7px"><div class="bar-fi" style="width:${Math.round(m.cnt/maxCnt*100)}%;background:var(--ac)"></div></div></td><td style="text-align:center"><span class="bdg bg">${m.ppl}</span></td><td style="font-size:11px;color:var(--mu)">${[...new Set(m.months)].sort((a,b)=>a-b).map(mo=>mo+'月').join('、')}</td></tr>`).join('')+`</tbody><tfoot><tr style="background:rgba(79,142,247,.05)"><td colspan="2" style="font-weight:700">合計</td><td style="text-align:center;font-weight:700;color:var(--ac);font-family:'DM Mono',monospace">${tCnt}</td><td></td><td style="text-align:center;font-weight:700;color:var(--ac3);font-family:'DM Mono',monospace">${tPpl}</td><td></td></tr></tfoot></table>`;}
-  el.innerHTML=`<div class="slbl" style="margin-top:0">📌 整體概覽</div><div class="sgrid"><div class="sbox b"><div class="slb">實地訪視（累計次數）</div><div class="sv b">${Object.values(vPtot).reduce((a,b)=>a+b,0)}</div></div><div class="sbox b"><div class="slb">實地訪視受益人次</div><div class="sv b">${DB.visitComms.reduce((s,v)=>s+v.ppl,0)}</div></div><div class="sbox b"><div class="slb">訪視社區數（不重複）</div><div class="sv b">${visitCommSet.size}</div></div><div class="sbox g"><div class="slb">社區聯繫次數</div><div class="sv g">${Object.values(cPtot).reduce((a,b)=>a+b,0)}</div></div><div class="sbox g"><div class="slb">聯繫社區數（不重複）</div><div class="sv g">${contactCommSet.size}</div></div><div class="sbox o"><div class="slb">公所聯繫次數</div><div class="sv o">${Object.values(oPtot).reduce((a,b)=>a+b,0)}</div></div><div class="sbox o"><div class="slb">聯繫公所（不重複）</div><div class="sv o">${new Set(DB.officeComms.map(o=>o.name)).size}</div></div><div class="sbox r"><div class="slb">方案辦理場次</div><div class="sv r">${DB.schemes.length}</div></div><div class="sbox r"><div class="slb">方案受益人次</div><div class="sv r">${totalSP}</div></div><div class="sbox g" style="grid-column:span 2"><div class="slb">🌟 總觸及社區數（四大來源去重合計）</div><div class="sv g">${allComms.size}</div></div></div>
-  <div class="two"><div class="card"><div class="ctitle">🚶 實地訪視目的分項</div>${bars(vPtot,vPkeys,'var(--ac)')}</div><div class="card"><div class="ctitle">📞 社區聯繫目的分項</div>${bars(cPtot,cPkeys,'var(--ac3)')}</div></div>
-  <div class="two"><div class="card"><div class="ctitle">🏢 公所聯繫目的分項</div>${bars(oPtot,oPkeys,'var(--ac2)')}</div><div class="card"><div class="ctitle">🏆 社區輔導級別（共${DB.levels.length}個）</div>${Object.entries(lvMap).map(([k,v])=>`<div class="bar-row"><span class="lvbdg ${LVC[k]}" style="min-width:62px">${k}</span><div class="bar-tr"><div class="bar-fi" style="width:${DB.levels.length?Math.round(v/DB.levels.length*100):0}%;background:var(--ac)"></div></div><div class="bar-n" style="color:var(--ac)">${v}</div></div>`).join('')}</div></div>
+  // 訪視目的從記錄加總
+  const purposeFromRec={};
+  DB.visitComms.forEach(v=>{const p=v.purpose||'其他';purposeFromRec[p]=(purposeFromRec[p]||0)+v.cnt;});
+  const purpLabels={'技術指導':'技術指導','社區評估':'社區評估','中心簡介':'中心簡介','團隊建置':'團隊建置','情緒支持':'情緒支持','其他':'其他'};
+
+  // 同仁訪視統計
+  const staffMap={};
+  DB.visitComms.forEach(v=>{const s=v.staff_name||'未指定';if(!staffMap[s])staffMap[s]={cnt:0,ppl:0,comms:new Set()};staffMap[s].cnt+=v.cnt;staffMap[s].ppl+=v.ppl;staffMap[s].comms.add(v.name);});
+  const staffOrder=['治漢','筱輝','海文','詣涵','意淳'];
+  const maxSCnt=Math.max(...Object.values(staffMap).map(m=>m.cnt),1);
+  const staffTable=Object.keys(staffMap).length===0?'<div class="empty">尚未登錄任何訪視資料</div>':`<table class="tbl"><thead><tr><th>主責人員</th><th>訪視次數</th><th>次數分佈</th><th>受益人次</th><th>觸及社區數</th></tr></thead><tbody>`+[...staffOrder.filter(s=>staffMap[s]),...Object.keys(staffMap).filter(s=>!staffOrder.includes(s))].map(s=>{const m=staffMap[s];return`<tr><td><span class="bdg bo">${s}</span></td><td style="text-align:center"><span class="bdg bb">${m.cnt}</span></td><td style="min-width:100px"><div class="bar-tr" style="height:7px"><div class="bar-fi" style="width:${Math.round(m.cnt/maxSCnt*100)}%;background:var(--ac2)"></div></div></td><td style="text-align:center"><span class="bdg bg">${m.ppl}</span></td><td style="text-align:center">${m.comms.size} 個</td></tr>`;}).join('')+`<tr style="background:rgba(79,142,247,.05)"><td style="font-weight:700">合計</td><td style="text-align:center;font-weight:700;color:var(--ac);font-family:'DM Mono',monospace">${DB.visitComms.reduce((s,v)=>s+v.cnt,0)}</td><td></td><td style="text-align:center;font-weight:700;color:var(--ac3);font-family:'DM Mono',monospace">${DB.visitComms.reduce((s,v)=>s+v.ppl,0)}</td><td style="text-align:center">${visitCommSet.size} 個</td></tr></tbody></table>`;
+
+  const totalVisitCnt=DB.visitComms.reduce((s,v)=>s+v.cnt,0);
+
+  el.innerHTML=`<div class="slbl" style="margin-top:0">📌 整體概覽</div><div class="sgrid">
+    <div class="sbox b"><div class="slb">實地訪視（累計次數）</div><div class="sv b">${totalVisitCnt}</div></div>
+    <div class="sbox b"><div class="slb">實地訪視受益人次</div><div class="sv b">${DB.visitComms.reduce((s,v)=>s+v.ppl,0)}</div></div>
+    <div class="sbox b"><div class="slb">訪視社區數（不重複）</div><div class="sv b">${visitCommSet.size}</div></div>
+    <div class="sbox g"><div class="slb">社區聯繫次數</div><div class="sv g">${Object.values(cPtot).reduce((a,b)=>a+b,0)}</div></div>
+    <div class="sbox g"><div class="slb">聯繫社區數（不重複）</div><div class="sv g">${contactCommSet.size}</div></div>
+    <div class="sbox o"><div class="slb">公所聯繫次數</div><div class="sv o">${Object.values(oPtot).reduce((a,b)=>a+b,0)}</div></div>
+    <div class="sbox o"><div class="slb">聯繫公所（不重複）</div><div class="sv o">${new Set(DB.officeComms.map(o=>o.name)).size}</div></div>
+    <div class="sbox r"><div class="slb">方案辦理場次</div><div class="sv r">${DB.schemes.length}</div></div>
+    <div class="sbox r"><div class="slb">方案受益人次</div><div class="sv r">${totalSP}</div></div>
+    <div class="sbox g" style="grid-column:span 2"><div class="slb">🌟 總觸及社區數（四大來源去重合計）</div><div class="sv g">${allComms.size}</div></div>
+  </div>
+  <div class="card"><div class="ctitle">👤 同仁訪視次數統計</div>${staffTable}</div>
+  <div class="two">
+    <div class="card"><div class="ctitle">🚶 實地訪視目的分項（從紀錄加總）</div>${bars(purposeFromRec,purpLabels,'var(--ac)')}</div>
+    <div class="card"><div class="ctitle">📞 社區聯繫目的分項</div>${bars(cPtot,cPkeys,'var(--ac3)')}</div>
+  </div>
+  <div class="two">
+    <div class="card"><div class="ctitle">🏢 公所聯繫目的分項</div>${bars(oPtot,oPkeys,'var(--ac2)')}</div>
+    <div class="card"><div class="ctitle">🏆 社區輔導級別（共${DB.levels.length}個）</div>${Object.entries(lvMap).map(([k,v])=>`<div class="bar-row"><span class="lvbdg ${LVC[k]}" style="min-width:62px">${k}</span><div class="bar-tr"><div class="bar-fi" style="width:${DB.levels.length?Math.round(v/DB.levels.length*100):0}%;background:var(--ac)"></div></div><div class="bar-n" style="color:var(--ac)">${v}</div></div>`).join('')}</div>
+  </div>
   <div class="card"><div class="ctitle">🚶 各社區訪視次數統計（共 ${visitCommSet.size} 個社區）</div>${visitCommTable}</div>
   <div class="card"><div class="ctitle">👥 方案人次細目</div>${[['社區幹部',sCnt.cadre],['志工',sCnt.vol],['其他居民',sCnt.other],['公所承辦',sCnt.officer],['公所主管',sCnt.mgr],['工作人員',sCnt.staff]].map(([k,v])=>`<div class="bar-row"><div class="bar-lbl">${k}</div><div class="bar-tr"><div class="bar-fi" style="width:${totalSP?Math.round(v/totalSP*100):0}%;background:var(--red)"></div></div><div class="bar-n" style="color:var(--red)">${v}</div></div>`).join('')}<div style="margin-top:9px;padding-top:8px;border-top:1px solid var(--bd);font-size:12px;color:var(--mu)">合計：<strong style="color:var(--ac);font-family:'DM Mono',monospace">${totalSP}</strong> 人次</div></div>
   <div class="card"><div class="ctitle">🌐 總觸及社區名單（共 ${allComms.size} 個）</div><div class="notice"><strong>說明：</strong>涵蓋實地訪視、社區聯繫、方案參與、級別評估四個來源，重複者已自動去除。<span style="color:var(--ac3)">●</span> 綠色 = 曾參與方案活動。</div><div class="comm-grid">${[...allComms].sort().map(c=>`<div class="cc ${schemeCommSet.has(c)?'hl':''}">${c}</div>`).join('')}</div></div>
