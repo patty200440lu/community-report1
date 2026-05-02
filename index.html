@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>新北市社區培力育成中心｜成果彙整系統</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
 :root{--bg:#0f1117;--sur:#1a1d27;--sur2:#22263a;--bd:#2e3350;--ac:#4f8ef7;--ac2:#f7a94f;--ac3:#5de3a2;--red:#f75f5f;--tx:#e8eaf6;--mu:#7880a4;}
@@ -488,11 +487,75 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
 </div></div>
 
 <script>
-// ── Supabase ──
+// ── Supabase REST Client（純 fetch，不需 CDN）──
 const SUPA_URL='https://yrqzaxhdssihuwimzxcx.supabase.co';
 const SUPA_KEY='sb_publishable_wvT5p3N2IPOUTf8QYtXv6Q_IT02OPtI';
-const _supaLib = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
-const sb = _supaLib ? _supaLib.createClient(SUPA_URL, SUPA_KEY) : null;
+const SUPA_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycXpheGhkc3NpaHV3aW16eGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNDc2OTEsImV4cCI6MjA5MDcyMzY5MX0.VTcdJCO9bLPR73EosorHJyA3JuL-C7dAd9tpZG8JOzs';
+
+// Supabase REST client - pure fetch, no CDN needed
+function makeSb(url, publishKey, anonKey) {
+  const BASE = url + '/rest/v1';
+  const HDR = {
+    'apikey': anonKey,
+    'Authorization': 'Bearer ' + anonKey,
+    'Content-Type': 'application/json',
+    'X-Client-Info': 'supabase-js/2.0.0',
+  };
+  async function req(method, table, filters, cols, orderBy, body, prefer) {
+    let u = BASE + '/' + table;
+    const p = ['select=' + (cols||'*')];
+    if(orderBy) p.push('order=' + orderBy);
+    if(filters && filters.length) p.push(...filters);
+    u += '?' + p.join('&');
+    const headers = {...HDR};
+    if(prefer) headers['Prefer'] = prefer;
+    else if(method !== 'GET') headers['Prefer'] = 'return=minimal';
+    const opts = {method, headers};
+    if(body !== undefined) opts.body = JSON.stringify(body);
+    try {
+      const r = await fetch(u, opts);
+      if(!r.ok) {
+        let msg = r.statusText;
+        try { const e = await r.json(); msg = e.message || e.hint || e.error || msg; } catch(x){}
+        return {data:null, error:{message: `HTTP ${r.status}: ${msg}`}};
+      }
+      const text = await r.text();
+      return {data: text ? JSON.parse(text) : [], error:null};
+    } catch(e) {
+      return {data:null, error:{message: e.message}};
+    }
+  }
+  return {
+    from(table) {
+      const state = {table, filters:[], cols:'*', orderBy:null};
+      const chain = {
+        select(c='*') { state.cols=c; return chain; },
+        order(col) { state.orderBy=col+'.asc'; return chain; },
+        eq(col,val) { state.filters.push(col+'=eq.'+encodeURIComponent(val)); return chain; },
+        then(resolve, reject) {
+          return req('GET', state.table, state.filters, state.cols, state.orderBy)
+            .then(resolve, reject);
+        },
+        async insert(row) {
+          const body = Array.isArray(row)?row:[row];
+          return req('POST', state.table, [], null, null, body, 'return=representation');
+        },
+        async update(row) {
+          return req('PATCH', state.table, state.filters, null, null, row, 'return=minimal');
+        },
+        async delete() {
+          return req('DELETE', state.table, state.filters, null, null, undefined, 'return=minimal');
+        },
+        async upsert(row) {
+          const body = Array.isArray(row)?row:[row];
+          return req('POST', state.table, [], null, null, body, 'resolution=merge-duplicates,return=minimal');
+        }
+      };
+      return chain;
+    }
+  };
+}
+const sb = makeSb(SUPA_URL, SUPA_KEY, SUPA_ANON);
 
 // ── Local cache ──
 const DB={visitPurpose:[],visitComms:[],contactPurpose:[],contactComms:[],officePurpose:[],officeComms:[],levels:[],schemes:[]};
@@ -526,16 +589,14 @@ const SCT=TagInp('sc-tw','sc-ti');
 async function loadAll(){
   showLoading('連線 Supabase 中...');
   try{
-    if(!sb) throw new Error('Supabase 套件未載入，請確認網路連線後重新整理');
     const tables={
       visitPurpose:'visit_purpose', visitComms:'visit_comms',
       contactPurpose:'contact_purpose', contactComms:'contact_comms',
       officePurpose:'office_purpose', officeComms:'office_comms',
       levels:'levels', schemes:'schemes'
     };
-    // 逐一載入避免 DataCloneError
     for(const [key,tbl] of Object.entries(tables)){
-      const{data,error}=await sb.from(tbl).select('*').order('id');
+      const {data,error} = await sb.from(tbl).select('*').order('id');
       if(error) throw new Error(`載入 ${tbl} 失敗：${error.message}`);
       if(data) DB[key]=data;
     }
@@ -574,7 +635,9 @@ async function saveVP(){
 }
 async function delVP(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('visit_purpose').delete().eq('id',id);DB.visitPurpose=DB.visitPurpose.filter(v=>v.id!==id);setBadge('saved','已同步');renderVP();}
 function renderVP(){
-  const el=document.getElementById('vp-list');if(!DB.visitPurpose.length){el.innerHTML='<div class="empty">尚未登錄</div>';return;}
+  const el=document.getElementById('vp-list');
+  if(!el) return; // 目的統計頁籤已移除，略過
+  if(!DB.visitPurpose.length){el.innerHTML='<div class="empty">尚未登錄</div>';return;}
   const keys={intro:'中心簡介',eval:'社區評估',tech:'技術指導',team:'團隊建置',emo:'情緒支持',other:'其他'};
   const s=[...DB.visitPurpose].sort((a,b)=>a.month-b.month);
   el.innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>月份</th>${Object.values(keys).map(k=>`<th>${k}</th>`).join('')}<th>小計</th><th></th></tr></thead><tbody>`+s.map(v=>{const tot=Object.keys(keys).reduce((s,k)=>s+v[k],0);return`<tr><td style="font-family:'DM Mono',monospace">${yr()}年${v.month}月</td>${Object.keys(keys).map(k=>`<td style="text-align:center;font-family:'DM Mono',monospace">${v[k]||'-'}</td>`).join('')}<td><span class="bdg bb">${tot}</span></td><td style="white-space:nowrap"><button class="btn btn-e btn-sm" onclick="editVP(${v.id})" style="margin-right:4px">編輯</button><button class="btn btn-d btn-sm" onclick="delVP(${v.id})">刪</button></td></tr>`;}).join('')+`</tbody><tfoot><tr style="background:rgba(79,142,247,.05)"><td style="font-weight:700">累計</td>${Object.keys(keys).map(k=>`<td style="text-align:center;font-weight:700;color:var(--ac);font-family:'DM Mono',monospace">${DB.visitPurpose.reduce((s,v)=>s+v[k],0)||'-'}</td>`).join('')}<td style="font-weight:700;color:var(--ac)">${DB.visitPurpose.reduce((s,v)=>s+Object.keys(keys).reduce((a,k)=>a+v[k],0),0)}</td><td></td></tr></tfoot></table></div>`;
