@@ -632,7 +632,7 @@ async function saveVP(){
   const month=nv('vp-month');
   const data={id:Date.now(),month,intro:nv('vp-intro'),eval:nv('vp-eval'),tech:nv('vp-tech'),team:nv('vp-team'),emo:nv('vp-emo'),other:nv('vp-other')};
   const existing=DB.visitPurpose.find(v=>v.month===month);
-  if(existing){if(!confirm(`${month}月已有紀錄，是否覆蓋？`))return;setBadge('saving','儲存中...');await sb.from('visit_purpose').delete().eq('id',existing.id);DB.visitPurpose=DB.visitPurpose.filter(v=>v.id!==existing.id);}
+  if(existing){if(!confirm(`${month}月已有紀錄，是否覆蓋？`))return;setBadge('saving','儲存中...');await sb.from('visit_purpose').eq('id',existing.id).delete();DB.visitPurpose=DB.visitPurpose.filter(v=>v.id!==existing.id);}
   else setBadge('saving','儲存中...');
   const{error}=await sb.from('visit_purpose').insert(data);
   if(error){setBadge('error','儲存失敗');return;}
@@ -640,7 +640,7 @@ async function saveVP(){
   ['vp-intro','vp-eval','vp-tech','vp-team','vp-emo','vp-other'].forEach(id=>document.getElementById(id).value=0);
   renderVP();
 }
-async function delVP(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('visit_purpose').delete().eq('id',id);DB.visitPurpose=DB.visitPurpose.filter(v=>v.id!==id);setBadge('saved','已同步');renderVP();}
+async function delVP(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('visit_purpose').eq('id',id).delete();DB.visitPurpose=DB.visitPurpose.filter(v=>v.id!==id);setBadge('saved','已同步');renderVP();}
 function renderVP(){
   const el=document.getElementById('vp-list');
   if(!el) return; // 目的統計頁籤已移除，略過
@@ -655,8 +655,8 @@ async function saveEditVP(){
   const upd={month,intro:+document.getElementById('edit-vp-intro').value||0,eval:+document.getElementById('edit-vp-eval').value||0,tech:+document.getElementById('edit-vp-tech').value||0,team:+document.getElementById('edit-vp-team').value||0,emo:+document.getElementById('edit-vp-emo').value||0,other:+document.getElementById('edit-vp-other').value||0};
   const conflict=DB.visitPurpose.find(v=>v.month===month&&v.id!==id);
   if(conflict&&!confirm(`${month}月已有另一筆，覆蓋？`))return;
-  if(conflict){await sb.from('visit_purpose').delete().eq('id',conflict.id);DB.visitPurpose=DB.visitPurpose.filter(v=>v.id!==conflict.id);}
-  setBadge('saving','儲存中...');const{error}=await sb.from('visit_purpose').update(upd).eq('id',id);
+  if(conflict){await sb.from('visit_purpose').eq('id',conflict.id).delete();DB.visitPurpose=DB.visitPurpose.filter(v=>v.id!==conflict.id);}
+  setBadge('saving','儲存中...');const{error}=await sb.from('visit_purpose').eq('id',id).update(upd);
   if(error){setBadge('error','儲存失敗');return;}
   const idx=DB.visitPurpose.findIndex(v=>v.id===id);if(idx>-1)DB.visitPurpose[idx]={...DB.visitPurpose[idx],...upd};
   setBadge('saved','已同步');closeModal('modal-vp');renderVP();
@@ -750,7 +750,7 @@ async function addVC(){ /* 已改用 batch */ }
 async function delVC(id){
   if(!confirm('確定刪除？'))return;
   setBadge('saving','儲存中...');
-  await sb.from('visit_comms').delete().eq('id',id);
+  await sb.from('visit_comms').eq('id',id).delete();
   DB.visitComms=DB.visitComms.filter(v=>v.id!==id);
   setBadge('saved','已同步'); renderVC();
 }
@@ -810,7 +810,7 @@ async function saveEditVC(){
   };
   if(!upd.name){alert('請填寫社區名稱');return;}
   setBadge('saving','儲存中...');
-  const{error}=await sb.from('visit_comms').update(upd).eq('id',id);
+  const{error}=await sb.from('visit_comms').eq('id',id).update(upd);
   if(error){setBadge('error','儲存失敗');return;}
   const idx=DB.visitComms.findIndex(v=>v.id===id);
   if(idx>-1)DB.visitComms[idx]={...DB.visitComms[idx],...upd};
@@ -824,13 +824,13 @@ async function saveCP(){
   const month=nv('cp-month');
   const data={id:Date.now(),month,visit:nv('cpp-visit'),res:nv('cpp-res'),eval:nv('cpp-eval'),course:nv('cpp-course'),emo:nv('cpp-emo'),plan:nv('cpp-plan'),proj:nv('cpp-proj'),consult:nv('cpp-consult')};
   const existing=DB.contactPurpose.find(c=>c.month===month);
-  if(existing){if(!confirm(`${month}月已有紀錄，是否覆蓋？`))return;setBadge('saving','儲存中...');await sb.from('contact_purpose').delete().eq('id',existing.id);DB.contactPurpose=DB.contactPurpose.filter(c=>c.id!==existing.id);}
+  if(existing){if(!confirm(`${month}月已有紀錄，是否覆蓋？`))return;setBadge('saving','儲存中...');await sb.from('contact_purpose').eq('id',existing.id).delete();DB.contactPurpose=DB.contactPurpose.filter(c=>c.id!==existing.id);}
   else setBadge('saving','儲存中...');
   const{error}=await sb.from('contact_purpose').insert(data);if(error){setBadge('error','儲存失敗');return;}
   DB.contactPurpose.push(data);setBadge('saved','已同步');
   ['cpp-visit','cpp-res','cpp-eval','cpp-course','cpp-emo','cpp-plan','cpp-proj','cpp-consult'].forEach(id=>document.getElementById(id).value=0);renderCP();
 }
-async function delCP(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('contact_purpose').delete().eq('id',id);DB.contactPurpose=DB.contactPurpose.filter(c=>c.id!==id);setBadge('saved','已同步');renderCP();}
+async function delCP(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('contact_purpose').eq('id',id).delete();DB.contactPurpose=DB.contactPurpose.filter(c=>c.id!==id);setBadge('saved','已同步');renderCP();}
 function renderCP(){
   const el=document.getElementById('cp-list');if(!DB.contactPurpose.length){el.innerHTML='<div class="empty">尚未登錄</div>';return;}
   const keys={visit:'訪視邀約',res:'資源連結',eval:'社區評估',course:'課程邀約',emo:'情緒支持',plan:'計畫討論',proj:'專案輔導',consult:'社區諮詢'};
@@ -842,8 +842,8 @@ async function saveEditCP(){
   const id=+document.getElementById('edit-cp-id').value;const month=+document.getElementById('edit-cp-month').value;
   const upd={month,visit:+document.getElementById('edit-cp-visit').value||0,res:+document.getElementById('edit-cp-res').value||0,eval:+document.getElementById('edit-cp-eval').value||0,course:+document.getElementById('edit-cp-course').value||0,emo:+document.getElementById('edit-cp-emo').value||0,plan:+document.getElementById('edit-cp-plan').value||0,proj:+document.getElementById('edit-cp-proj').value||0,consult:+document.getElementById('edit-cp-consult').value||0};
   const conflict=DB.contactPurpose.find(c=>c.month===month&&c.id!==id);
-  if(conflict&&!confirm(`${month}月已有另一筆，覆蓋？`))return;if(conflict){await sb.from('contact_purpose').delete().eq('id',conflict.id);DB.contactPurpose=DB.contactPurpose.filter(c=>c.id!==conflict.id);}
-  setBadge('saving','儲存中...');const{error}=await sb.from('contact_purpose').update(upd).eq('id',id);if(error){setBadge('error','儲存失敗');return;}
+  if(conflict&&!confirm(`${month}月已有另一筆，覆蓋？`))return;if(conflict){await sb.from('contact_purpose').eq('id',conflict.id).delete();DB.contactPurpose=DB.contactPurpose.filter(c=>c.id!==conflict.id);}
+  setBadge('saving','儲存中...');const{error}=await sb.from('contact_purpose').eq('id',id).update(upd);if(error){setBadge('error','儲存失敗');return;}
   const idx=DB.contactPurpose.findIndex(c=>c.id===id);if(idx>-1)DB.contactPurpose[idx]={...DB.contactPurpose[idx],...upd};setBadge('saved','已同步');closeModal('modal-cp');renderCP();
 }
 
@@ -858,7 +858,7 @@ async function addCC(){
   }
   setBadge('saved','已同步');CCT.clear();renderCC();
 }
-async function delCC(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('contact_comms').delete().eq('id',id);DB.contactComms=DB.contactComms.filter(c=>c.id!==id);setBadge('saved','已同步');renderCC();}
+async function delCC(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('contact_comms').eq('id',id).delete();DB.contactComms=DB.contactComms.filter(c=>c.id!==id);setBadge('saved','已同步');renderCC();}
 function renderCC(){
   const el=document.getElementById('cc-list');if(!DB.contactComms.length){el.innerHTML='<div class="empty">尚未登錄任何社區</div>';return;}
   const s=[...DB.contactComms].sort((a,b)=>a.month!==b.month?a.month-b.month:a.name.localeCompare(b.name,'zh-TW'));
@@ -867,7 +867,7 @@ function renderCC(){
 function editCC(id){const r=DB.contactComms.find(c=>c.id===id);if(!r)return;document.getElementById('edit-cc-id').value=id;document.getElementById('edit-cc-month').value=r.month;document.getElementById('edit-cc-name').value=r.name;openModal('modal-cc');}
 async function saveEditCC(){
   const id=+document.getElementById('edit-cc-id').value;const upd={month:+document.getElementById('edit-cc-month').value,name:document.getElementById('edit-cc-name').value.trim()};
-  if(!upd.name){alert('請填寫社區名稱');return;}setBadge('saving','儲存中...');const{error}=await sb.from('contact_comms').update(upd).eq('id',id);if(error){setBadge('error','儲存失敗');return;}
+  if(!upd.name){alert('請填寫社區名稱');return;}setBadge('saving','儲存中...');const{error}=await sb.from('contact_comms').eq('id',id).update(upd);if(error){setBadge('error','儲存失敗');return;}
   const idx=DB.contactComms.findIndex(c=>c.id===id);if(idx>-1)DB.contactComms[idx]={...DB.contactComms[idx],...upd};setBadge('saved','已同步');closeModal('modal-cc');renderCC();
 }
 
@@ -878,13 +878,13 @@ async function saveOP(){
   const month=nv('op-month');
   const data={id:Date.now(),month,visit:nv('opp-visit'),res:nv('opp-res'),overview:nv('opp-overview'),course:nv('opp-course'),emo:nv('opp-emo'),plan:nv('opp-plan'),other:nv('opp-other')};
   const existing=DB.officePurpose.find(o=>o.month===month);
-  if(existing){if(!confirm(`${month}月已有紀錄，是否覆蓋？`))return;setBadge('saving','儲存中...');await sb.from('office_purpose').delete().eq('id',existing.id);DB.officePurpose=DB.officePurpose.filter(o=>o.id!==existing.id);}
+  if(existing){if(!confirm(`${month}月已有紀錄，是否覆蓋？`))return;setBadge('saving','儲存中...');await sb.from('office_purpose').eq('id',existing.id).delete();DB.officePurpose=DB.officePurpose.filter(o=>o.id!==existing.id);}
   else setBadge('saving','儲存中...');
   const{error}=await sb.from('office_purpose').insert(data);if(error){setBadge('error','儲存失敗');return;}
   DB.officePurpose.push(data);setBadge('saved','已同步');
   ['opp-visit','opp-res','opp-overview','opp-course','opp-emo','opp-plan','opp-other'].forEach(id=>document.getElementById(id).value=0);renderOP();
 }
-async function delOP(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('office_purpose').delete().eq('id',id);DB.officePurpose=DB.officePurpose.filter(o=>o.id!==id);setBadge('saved','已同步');renderOP();}
+async function delOP(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('office_purpose').eq('id',id).delete();DB.officePurpose=DB.officePurpose.filter(o=>o.id!==id);setBadge('saved','已同步');renderOP();}
 function renderOP(){
   const el=document.getElementById('op-list');if(!DB.officePurpose.length){el.innerHTML='<div class="empty">尚未登錄</div>';return;}
   const keys={visit:'訪視邀約',res:'資源連結',overview:'概況討論',course:'課程邀約',emo:'情緒支持',plan:'計畫討論',other:'其他'};
@@ -895,8 +895,8 @@ function editOP(id){const r=DB.officePurpose.find(o=>o.id===id);if(!r)return;doc
 async function saveEditOP(){
   const id=+document.getElementById('edit-op-id').value;const month=+document.getElementById('edit-op-month').value;
   const upd={month,visit:+document.getElementById('edit-op-visit').value||0,res:+document.getElementById('edit-op-res').value||0,overview:+document.getElementById('edit-op-overview').value||0,course:+document.getElementById('edit-op-course').value||0,emo:+document.getElementById('edit-op-emo').value||0,plan:+document.getElementById('edit-op-plan').value||0,other:+document.getElementById('edit-op-other').value||0};
-  const conflict=DB.officePurpose.find(o=>o.month===month&&o.id!==id);if(conflict&&!confirm(`${month}月已有另一筆，覆蓋？`))return;if(conflict){await sb.from('office_purpose').delete().eq('id',conflict.id);DB.officePurpose=DB.officePurpose.filter(o=>o.id!==conflict.id);}
-  setBadge('saving','儲存中...');const{error}=await sb.from('office_purpose').update(upd).eq('id',id);if(error){setBadge('error','儲存失敗');return;}
+  const conflict=DB.officePurpose.find(o=>o.month===month&&o.id!==id);if(conflict&&!confirm(`${month}月已有另一筆，覆蓋？`))return;if(conflict){await sb.from('office_purpose').eq('id',conflict.id).delete();DB.officePurpose=DB.officePurpose.filter(o=>o.id!==conflict.id);}
+  setBadge('saving','儲存中...');const{error}=await sb.from('office_purpose').eq('id',id).update(upd);if(error){setBadge('error','儲存失敗');return;}
   const idx=DB.officePurpose.findIndex(o=>o.id===id);if(idx>-1)DB.officePurpose[idx]={...DB.officePurpose[idx],...upd};setBadge('saved','已同步');closeModal('modal-op');renderOP();
 }
 
@@ -909,7 +909,7 @@ async function addOC(){
   for(const name of names){if(!DB.officeComms.find(o=>o.month===month&&o.name===name)){const data={id:Date.now()+Math.random(),month,name};const{error}=await sb.from('office_comms').insert(data);if(!error)DB.officeComms.push(data);}}
   setBadge('saved','已同步');OCT.clear();renderOC();
 }
-async function delOC(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('office_comms').delete().eq('id',id);DB.officeComms=DB.officeComms.filter(o=>o.id!==id);setBadge('saved','已同步');renderOC();}
+async function delOC(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('office_comms').eq('id',id).delete();DB.officeComms=DB.officeComms.filter(o=>o.id!==id);setBadge('saved','已同步');renderOC();}
 function renderOC(){
   const el=document.getElementById('oc-list');if(!DB.officeComms.length){el.innerHTML='<div class="empty">尚未登錄任何公所</div>';return;}
   const s=[...DB.officeComms].sort((a,b)=>a.month!==b.month?a.month-b.month:a.name.localeCompare(b.name,'zh-TW'));
@@ -918,7 +918,7 @@ function renderOC(){
 function editOC(id){const r=DB.officeComms.find(o=>o.id===id);if(!r)return;document.getElementById('edit-oc-id').value=id;document.getElementById('edit-oc-month').value=r.month;document.getElementById('edit-oc-name').value=r.name;openModal('modal-oc');}
 async function saveEditOC(){
   const id=+document.getElementById('edit-oc-id').value;const upd={month:+document.getElementById('edit-oc-month').value,name:document.getElementById('edit-oc-name').value.trim()};
-  if(!upd.name){alert('請填寫行政區名稱');return;}setBadge('saving','儲存中...');const{error}=await sb.from('office_comms').update(upd).eq('id',id);if(error){setBadge('error','儲存失敗');return;}
+  if(!upd.name){alert('請填寫行政區名稱');return;}setBadge('saving','儲存中...');const{error}=await sb.from('office_comms').eq('id',id).update(upd);if(error){setBadge('error','儲存失敗');return;}
   const idx=DB.officeComms.findIndex(o=>o.id===id);if(idx>-1)DB.officeComms[idx]={...DB.officeComms[idx],...upd};setBadge('saved','已同步');closeModal('modal-oc');renderOC();
 }
 
@@ -930,11 +930,11 @@ async function addLV(){
   const comm=document.getElementById('lv-comm').value.trim();if(!comm){alert('請填寫社區名稱');return;}
   const dist=document.getElementById('lv-dist').value.trim();const level=document.getElementById('lv-level').value;const score=nv('lv-score');const note=document.getElementById('lv-note').value.trim();
   const existing=DB.levels.find(l=>l.comm===comm);
-  if(existing){setBadge('saving','儲存中...');const{error}=await sb.from('levels').update({dist,level,score,note}).eq('id',existing.id);if(error){setBadge('error','儲存失敗');return;}const idx=DB.levels.findIndex(l=>l.id===existing.id);if(idx>-1)DB.levels[idx]={...existing,dist,level,score,note};}
+  if(existing){setBadge('saving','儲存中...');const{error}=await sb.from('levels').eq('id',existing.id).update({dist,level,score,note});if(error){setBadge('error','儲存失敗');return;}const idx=DB.levels.findIndex(l=>l.id===existing.id);if(idx>-1)DB.levels[idx]={...existing,dist,level,score,note};}
   else{const data={id:Date.now(),comm,dist,level,score,note};setBadge('saving','儲存中...');const{error}=await sb.from('levels').insert(data);if(error){setBadge('error','儲存失敗');return;}DB.levels.push(data);}
   setBadge('saved','已同步');['lv-comm','lv-dist','lv-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('lv-score').value='';renderLV();
 }
-async function delLV(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('levels').delete().eq('id',id);DB.levels=DB.levels.filter(l=>l.id!==id);setBadge('saved','已同步');renderLV();}
+async function delLV(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('levels').eq('id',id).delete();DB.levels=DB.levels.filter(l=>l.id!==id);setBadge('saved','已同步');renderLV();}
 function renderLV(){
   const el=document.getElementById('lv-list');if(!DB.levels.length){el.innerHTML='<div class="empty">尚未登錄</div>';return;}
   const ord=['標竿型','成熟型','成長型','潛力型','停滯型'];const s=[...DB.levels].sort((a,b)=>ord.indexOf(a.level)-ord.indexOf(b.level));
@@ -944,7 +944,7 @@ function editLV(id){const r=DB.levels.find(l=>l.id===id);if(!r)return;document.g
 async function saveEditLV(){
   const id=+document.getElementById('edit-lv-id').value;const comm=document.getElementById('edit-lv-comm').value.trim();if(!comm){alert('請填寫社區名稱');return;}
   const upd={comm,dist:document.getElementById('edit-lv-dist').value.trim(),level:document.getElementById('edit-lv-level').value,score:+document.getElementById('edit-lv-score').value||0,note:document.getElementById('edit-lv-note').value.trim()};
-  setBadge('saving','儲存中...');const{error}=await sb.from('levels').update(upd).eq('id',id);if(error){setBadge('error','儲存失敗');return;}
+  setBadge('saving','儲存中...');const{error}=await sb.from('levels').eq('id',id).update(upd);if(error){setBadge('error','儲存失敗');return;}
   const idx=DB.levels.findIndex(l=>l.id===id);if(idx>-1)DB.levels[idx]={...DB.levels[idx],...upd};setBadge('saved','已同步');closeModal('modal-lv');renderLV();
 }
 
@@ -959,7 +959,7 @@ async function addSC(){
   DB.schemes.push({...data,comms,counts:{cadre:data.cadre,vol:data.vol,other:data.other_count,officer:data.officer,mgr:data.mgr,staff:data.staff}});
   setBadge('saved','已同步');SCT.clear();document.getElementById('sc-name').value='';document.getElementById('sc-date').value='';['sc-cadre','sc-vol','sc-other','sc-officer','sc-mgr','sc-staff'].forEach(id=>document.getElementById(id).value=0);document.getElementById('sc-sat').value=100;renderSC();
 }
-async function delSC(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('schemes').delete().eq('id',id);DB.schemes=DB.schemes.filter(s=>s.id!==id);setBadge('saved','已同步');renderSC();}
+async function delSC(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('schemes').eq('id',id).delete();DB.schemes=DB.schemes.filter(s=>s.id!==id);setBadge('saved','已同步');renderSC();}
 function renderSC(){
   const el=document.getElementById('sc-list');if(!DB.schemes.length){el.innerHTML='<div class="empty">尚未登錄任何場次</div>';return;}
   const s=[...DB.schemes].sort((a,b)=>a.date>b.date?-1:1);
@@ -981,7 +981,7 @@ async function saveEditSC(){
   const id=+document.getElementById('edit-sc-id').value;const name=document.getElementById('edit-sc-name').value.trim();const date=document.getElementById('edit-sc-date').value;if(!name||!date){alert('請填寫名稱及日期');return;}
   const comms=editSCT?editSCT.get():[];
   const upd={name,date,cat:document.getElementById('edit-sc-cat').value,cadre:+document.getElementById('edit-sc-cadre').value||0,vol:+document.getElementById('edit-sc-vol').value||0,other_count:+document.getElementById('edit-sc-other').value||0,officer:+document.getElementById('edit-sc-officer').value||0,mgr:+document.getElementById('edit-sc-mgr').value||0,staff:+document.getElementById('edit-sc-staff').value||0,sat:+document.getElementById('edit-sc-sat').value||100,comms:comms.join('|||')};
-  setBadge('saving','儲存中...');const{error}=await sb.from('schemes').update(upd).eq('id',id);if(error){setBadge('error','儲存失敗');return;}
+  setBadge('saving','儲存中...');const{error}=await sb.from('schemes').eq('id',id).update(upd);if(error){setBadge('error','儲存失敗');return;}
   const idx=DB.schemes.findIndex(s=>s.id===id);if(idx>-1)DB.schemes[idx]={...DB.schemes[idx],...upd,comms,counts:{cadre:upd.cadre,vol:upd.vol,other:upd.other_count,officer:upd.officer,mgr:upd.mgr,staff:upd.staff}};
   setBadge('saved','已同步');closeModal('modal-sc');renderSC();
 }
