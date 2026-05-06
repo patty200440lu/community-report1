@@ -499,66 +499,81 @@ function makeSb(url, publishKey, anonKey) {
     'apikey': anonKey,
     'Authorization': 'Bearer ' + anonKey,
     'Content-Type': 'application/json',
-    'X-Client-Info': 'supabase-js/2.0.0',
   };
-  async function req(method, table, filters, cols, orderBy, body, prefer) {
+
+  async function doFetch(method, table, filters, body, prefer) {
     let u = BASE + '/' + table;
     const p = [];
-    if(method === 'GET') p.push('select=' + (cols||'*'));
-    if(orderBy) p.push('order=' + orderBy);
+    if(method === 'GET') p.push('select=*');
     if(filters && filters.length) p.push(...filters);
     if(p.length) u += '?' + p.join('&');
-    const headers = {...HDR};
-    if(prefer) headers['Prefer'] = prefer;
-    else if(method !== 'GET') headers['Prefer'] = 'return=minimal';
+    const headers = {...HDR, 'Prefer': prefer || (method==='GET' ? '' : 'return=minimal')};
+    if(!headers['Prefer']) delete headers['Prefer'];
     const opts = {method, headers};
     if(body !== undefined) opts.body = JSON.stringify(body);
+    console.log(`[SB] ${method} ${u}`, body ? JSON.stringify(body).slice(0,80) : '');
     try {
-      console.log(`[SB] ${method} ${u}`, body ? JSON.stringify(body).slice(0,100) : '');
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
+      const tid = setTimeout(() => controller.abort(), 12000);
       const r = await fetch(u, {...opts, signal: controller.signal});
-      clearTimeout(timeout);
-      console.log(`[SB] response ${r.status} ${r.statusText}`);
+      clearTimeout(tid);
+      console.log(`[SB] → ${r.status} ${r.statusText}`);
       if(!r.ok) {
         let msg = r.statusText;
         try { const e = await r.json(); msg = e.message || e.hint || e.error || msg; } catch(x){}
-        return {data:null, error:{message: `HTTP ${r.status}: ${msg}`}};
+        return {data:null, error:{message:`HTTP ${r.status}: ${msg}`}};
       }
       const text = await r.text();
       return {data: text ? JSON.parse(text) : [], error:null};
     } catch(e) {
-      if(e.name === 'AbortError') return {data:null, error:{message:'請求逾時，請重試'}};
-      return {data:null, error:{message: e.message}};
+      if(e.name==='AbortError') return {data:null, error:{message:'請求逾時，請重試'}};
+      return {data:null, error:{message:e.message}};
     }
   }
+
   return {
     from(table) {
-      const state = {table, filters:[], cols:'*', orderBy:null};
-      const chain = {
-        select(c='*') { state.cols=c; return chain; },
-        order(col) { state.orderBy=col+'.asc'; return chain; },
-        eq(col,val) { state.filters.push(col+'=eq.'+val); return chain; },
+      const filters = [];
+      return {
+        eq(col, val) { filters.push(`${col}=eq.${val}`); return this; },
+        // GET
+        async select() {
+          return doFetch('GET', table, filters);
+        },
+        // for await - GET with order
+        order(col) {
+          filters.push(`order=${col}.asc`);
+          // return thenable for await
+          return {
+            then(resolve, reject) {
+              return doFetch('GET', table, filters).then(resolve, reject);
+            }
+          };
+        },
         then(resolve, reject) {
-          return req('GET', state.table, state.filters, state.cols, state.orderBy)
-            .then(resolve, reject);
+          return doFetch('GET', table, filters).then(resolve, reject);
         },
+        // POST
         async insert(row) {
-          const body = Array.isArray(row)?row:[row];
-          return req('POST', state.table, [], null, null, body, 'return=representation');
+          const body = Array.isArray(row) ? row : [row];
+          return doFetch('POST', table, [], body, 'return=representation');
         },
-        async update(row) {
-          return req('PATCH', state.table, state.filters, null, null, row, 'return=minimal');
+        // PATCH
+        async update(body) {
+          if(!filters.length) return {data:null, error:{message:'update requires eq filter'}};
+          return doFetch('PATCH', table, filters, body, 'return=minimal');
         },
+        // DELETE
         async delete() {
-          return req('DELETE', state.table, state.filters, null, null, undefined, 'return=minimal');
+          if(!filters.length) return {data:null, error:{message:'delete requires eq filter'}};
+          return doFetch('DELETE', table, filters, undefined, 'return=minimal');
         },
+        // UPSERT
         async upsert(row) {
-          const body = Array.isArray(row)?row:[row];
-          return req('POST', state.table, [], null, null, body, 'resolution=merge-duplicates,return=minimal');
+          const body = Array.isArray(row) ? row : [row];
+          return doFetch('POST', table, [], body, 'resolution=merge-duplicates,return=minimal');
         }
       };
-      return chain;
     }
   };
 }
@@ -603,7 +618,7 @@ async function loadAll(){
       levels:'levels', schemes:'schemes'
     };
     for(const [key,tbl] of Object.entries(tables)){
-      const {data,error} = await sb.from(tbl).select('*').order('id');
+      const {data,error} = await sb.from(tbl).order('id');
       if(error) throw new Error(`載入 ${tbl} 失敗：${error.message}`);
       if(data) DB[key]=data;
     }
