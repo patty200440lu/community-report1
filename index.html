@@ -158,8 +158,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
               <thead>
                 <tr style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em">
                   <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:40px">#</th>
-                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:110px">日期</th>
-                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:90px">月份</th>
+                  <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:110px">月份</th>
                   <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:140px">社區名稱</th>
                   <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:90px">主責人員</th>
                   <th style="padding:6px 4px;border-bottom:1px solid var(--bd);min-width:110px">訪視目的</th>
@@ -371,8 +370,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
   <div class="modal-title">✏️ 編輯訪視社區</div>
   <input type="hidden" id="edit-vc-id">
   <div class="fr">
-    <div class="fg" style="max-width:130px"><label>日期</label><input type="date" id="edit-vc-date"></div>
-    <div class="fg" style="max-width:100px"><label>月份</label><select id="edit-vc-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
+<div class="fg" style="max-width:100px"><label>月份</label><select id="edit-vc-month"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
     <div class="fg"><label>社區名稱</label><input type="text" id="edit-vc-name"></div>
   </div>
   <div class="fr">
@@ -662,7 +660,6 @@ function batchRowHTML(i) {
   const inp = `background:var(--sur2);border:1px solid var(--bd);border-radius:6px;padding:5px 7px;color:var(--tx);font-size:12px;font-family:'Noto Sans TC',sans-serif;outline:none;width:100%`;
   return `<tr id="brow-${i}" style="border-bottom:1px solid rgba(46,51,80,.3)">
     <td style="padding:4px 4px;font-size:11px;color:var(--mu);text-align:center">${i+1}</td>
-    <td style="padding:4px"><input type="date" style="${inp}" class="br-date"></td>
     <td style="padding:4px"><select style="${inp}" class="br-month">${moOpts}</select></td>
     <td style="padding:4px"><input type="text" style="${inp}" class="br-name" placeholder="社區名稱"></td>
     <td style="padding:4px"><select style="${inp}" class="br-staff">${staffOpts}</select></td>
@@ -688,10 +685,7 @@ function addBatchRow() {
   div.innerHTML = batchRowHTML(batchRowCount);
   tbody.appendChild(div.firstChild);
   const row = document.getElementById(`brow-${batchRowCount}`);
-  if(row) row.querySelector('.br-date').addEventListener('change', function(){
-    const d = new Date(this.value);
-    if(!isNaN(d)) row.querySelector('.br-month').value = d.getMonth()+1;
-  });
+
   batchRowCount++;
 }
 function removeBatchRow(i) {
@@ -706,8 +700,7 @@ async function saveBatch() {
     const name = row.querySelector('.br-name')?.value.trim();
     if(!name) return;
     toSave.push({
-      id: Date.now() + Math.random(),
-      date: row.querySelector('.br-date')?.value || '',
+      id: Date.now() + Math.floor(Math.random() * 1000),
       month: parseInt(row.querySelector('.br-month')?.value) || 1,
       name,
       staff_name: row.querySelector('.br-staff')?.value || '',
@@ -750,11 +743,10 @@ function renderVC(){
     return a.name.localeCompare(b.name,'zh-TW');
   });
   el.innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr>
-    <th>月份</th><th>日期</th><th>社區名稱</th><th>主責人員</th><th>訪視目的</th><th>次數</th><th>人次</th><th></th>
+    <th>月份</th><th>社區名稱</th><th>主責人員</th><th>訪視目的</th><th>次數</th><th>人次</th><th></th>
   </tr></thead><tbody>`+
   s.map(v=>`<tr>
     <td style="font-family:'DM Mono',monospace">${yr()}年${v.month}月</td>
-    <td style="font-family:'DM Mono',monospace;font-size:11px">${v.date||'-'}</td>
     <td style="font-weight:600">${v.name}</td>
     <td><span class="bdg bo">${v.staff_name||'-'}</span></td>
     <td><span class="bdg bb">${v.purpose||'-'}</span></td>
@@ -766,7 +758,7 @@ function renderVC(){
     </td>
   </tr>`).join('')+
   `</tbody><tfoot><tr style="background:rgba(79,142,247,.05)">
-    <td colspan="5" style="font-weight:700">累計（${new Set(DB.visitComms.map(v=>v.name)).size} 個社區）</td>
+    <td colspan="4" style="font-weight:700">累計（${new Set(DB.visitComms.map(v=>v.name)).size} 個社區）</td>
     <td style="text-align:center;font-weight:700;color:var(--ac);font-family:'DM Mono',monospace">${DB.visitComms.reduce((s,v)=>s+v.cnt,0)}</td>
     <td style="text-align:center;font-weight:700;color:var(--ac3);font-family:'DM Mono',monospace">${DB.visitComms.reduce((s,v)=>s+v.ppl,0)}</td>
     <td></td>
@@ -775,8 +767,7 @@ function renderVC(){
 function editVC(id){
   const r=DB.visitComms.find(v=>v.id===id);if(!r)return;
   document.getElementById('edit-vc-id').value=id;
-  document.getElementById('edit-vc-date').value=r.date||'';
-  document.getElementById('edit-vc-month').value=r.month;
+document.getElementById('edit-vc-month').value=r.month;
   document.getElementById('edit-vc-name').value=r.name;
   document.getElementById('edit-vc-staff').value=r.staff_name||'治漢';
   document.getElementById('edit-vc-purpose').value=r.purpose||'技術指導';
@@ -787,8 +778,7 @@ function editVC(id){
 async function saveEditVC(){
   const id=+document.getElementById('edit-vc-id').value;
   const upd={
-    date:document.getElementById('edit-vc-date').value,
-    month:+document.getElementById('edit-vc-month').value,
+month:+document.getElementById('edit-vc-month').value,
     name:document.getElementById('edit-vc-name').value.trim(),
     staff_name:document.getElementById('edit-vc-staff').value,
     purpose:document.getElementById('edit-vc-purpose').value,
@@ -841,7 +831,7 @@ async function addCC(){
   const month=nv('cc-month');const names=CCT.get();if(!names.length){alert('請輸入至少一個社區名稱');return;}
   setBadge('saving','儲存中...');
   for(const name of names){
-    if(!DB.contactComms.find(c=>c.month===month&&c.name===name)){const data={id:Date.now()+Math.random(),month,name};const{error}=await sb.from('contact_comms').insert(data);if(!error)DB.contactComms.push(data);}
+    if(!DB.contactComms.find(c=>c.month===month&&c.name===name)){const data={id:Date.now()+Math.floor(Math.random()*1000),month,name};const{error}=await sb.from('contact_comms').insert(data);if(!error)DB.contactComms.push(data);}
   }
   setBadge('saved','已同步');CCT.clear();renderCC();
 }
@@ -893,7 +883,7 @@ async function saveEditOP(){
 async function addOC(){
   const month=nv('oc-month');const names=OCT.get();if(!names.length){alert('請輸入至少一個行政區');return;}
   setBadge('saving','儲存中...');
-  for(const name of names){if(!DB.officeComms.find(o=>o.month===month&&o.name===name)){const data={id:Date.now()+Math.random(),month,name};const{error}=await sb.from('office_comms').insert(data);if(!error)DB.officeComms.push(data);}}
+  for(const name of names){if(!DB.officeComms.find(o=>o.month===month&&o.name===name)){const data={id:Date.now()+Math.floor(Math.random()*1000),month,name};const{error}=await sb.from('office_comms').insert(data);if(!error)DB.officeComms.push(data);}}
   setBadge('saved','已同步');OCT.clear();renderOC();
 }
 async function delOC(id){if(!confirm('確定刪除？'))return;setBadge('saving','儲存中...');await sb.from('office_comms').eq('id',id).delete();DB.officeComms=DB.officeComms.filter(o=>o.id!==id);setBadge('saved','已同步');renderOC();}
