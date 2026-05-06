@@ -514,10 +514,12 @@ function makeSb(url, publishKey, anonKey) {
     const opts = {method, headers};
     if(body !== undefined) opts.body = JSON.stringify(body);
     try {
+      console.log(`[SB] ${method} ${u}`, body ? JSON.stringify(body).slice(0,100) : '');
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
       const r = await fetch(u, {...opts, signal: controller.signal});
       clearTimeout(timeout);
+      console.log(`[SB] response ${r.status} ${r.statusText}`);
       if(!r.ok) {
         let msg = r.statusText;
         try { const e = await r.json(); msg = e.message || e.hint || e.error || msg; } catch(x){}
@@ -536,7 +538,7 @@ function makeSb(url, publishKey, anonKey) {
       const chain = {
         select(c='*') { state.cols=c; return chain; },
         order(col) { state.orderBy=col+'.asc'; return chain; },
-        eq(col,val) { state.filters.push(col+'=eq.'+encodeURIComponent(val)); return chain; },
+        eq(col,val) { state.filters.push(col+'=eq.'+val); return chain; },
         then(resolve, reject) {
           return req('GET', state.table, state.filters, state.cols, state.orderBy)
             .then(resolve, reject);
