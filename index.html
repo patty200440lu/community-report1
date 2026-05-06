@@ -503,17 +503,21 @@ function makeSb(url, publishKey, anonKey) {
   };
   async function req(method, table, filters, cols, orderBy, body, prefer) {
     let u = BASE + '/' + table;
-    const p = ['select=' + (cols||'*')];
+    const p = [];
+    if(method === 'GET') p.push('select=' + (cols||'*'));
     if(orderBy) p.push('order=' + orderBy);
     if(filters && filters.length) p.push(...filters);
-    u += '?' + p.join('&');
+    if(p.length) u += '?' + p.join('&');
     const headers = {...HDR};
     if(prefer) headers['Prefer'] = prefer;
     else if(method !== 'GET') headers['Prefer'] = 'return=minimal';
     const opts = {method, headers};
     if(body !== undefined) opts.body = JSON.stringify(body);
     try {
-      const r = await fetch(u, opts);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const r = await fetch(u, {...opts, signal: controller.signal});
+      clearTimeout(timeout);
       if(!r.ok) {
         let msg = r.statusText;
         try { const e = await r.json(); msg = e.message || e.hint || e.error || msg; } catch(x){}
@@ -522,6 +526,7 @@ function makeSb(url, publishKey, anonKey) {
       const text = await r.text();
       return {data: text ? JSON.parse(text) : [], error:null};
     } catch(e) {
+      if(e.name === 'AbortError') return {data:null, error:{message:'請求逾時，請重試'}};
       return {data:null, error:{message: e.message}};
     }
   }
