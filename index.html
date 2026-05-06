@@ -811,8 +811,8 @@ month:+document.getElementById('edit-vc-month').value,
 // ══════════════════════
 async function saveCP(){
   const month=nv('cp-month');
-  const data={id:Date.now(),month,staff_name,visit:nv('cpp-visit'),res:nv('cpp-res'),eval:nv('cpp-eval'),course:nv('cpp-course'),emo:nv('cpp-emo'),plan:nv('cpp-plan'),proj:nv('cpp-proj'),consult:nv('cpp-consult')};
   const staff_name=document.getElementById('cp-staff').value;
+  const data={id:Date.now(),month,staff_name,visit:nv('cpp-visit'),res:nv('cpp-res'),eval:nv('cpp-eval'),course:nv('cpp-course'),emo:nv('cpp-emo'),plan:nv('cpp-plan'),proj:nv('cpp-proj'),consult:nv('cpp-consult')};
   const existing=DB.contactPurpose.find(c=>c.month===month&&c.staff_name===staff_name);
   if(existing){if(!confirm(`${month}月 ${staff_name} 已有紀錄，是否覆蓋？`))return;setBadge('saving','儲存中...');await sb.from('contact_purpose').eq('id',existing.id).delete();DB.contactPurpose=DB.contactPurpose.filter(c=>c.id!==existing.id);}
   else setBadge('saving','儲存中...');
@@ -830,9 +830,9 @@ function renderCP(){
 function editCP(id){const r=DB.contactPurpose.find(c=>c.id===id);if(!r)return;document.getElementById('edit-cp-id').value=id;document.getElementById('edit-cp-month').value=r.month;document.getElementById('edit-cp-staff').value=r.staff_name||'治漢';['visit','res','eval','course','emo','plan','proj','consult'].forEach(k=>document.getElementById('edit-cp-'+k).value=r[k]);openModal('modal-cp');}
 async function saveEditCP(){
   const id=+document.getElementById('edit-cp-id').value;const month=+document.getElementById('edit-cp-month').value;
-  const upd={month,visit:+document.getElementById('edit-cp-visit').value||0,res:+document.getElementById('edit-cp-res').value||0,eval:+document.getElementById('edit-cp-eval').value||0,course:+document.getElementById('edit-cp-course').value||0,emo:+document.getElementById('edit-cp-emo').value||0,plan:+document.getElementById('edit-cp-plan').value||0,proj:+document.getElementById('edit-cp-proj').value||0,consult:+document.getElementById('edit-cp-consult').value||0};
-  const conflict=DB.contactPurpose.find(c=>c.month===month&&c.id!==id);
-  if(conflict&&!confirm(`${month}月已有另一筆，覆蓋？`))return;if(conflict){await sb.from('contact_purpose').eq('id',conflict.id).delete();DB.contactPurpose=DB.contactPurpose.filter(c=>c.id!==conflict.id);}
+  const upd={month,staff_name:document.getElementById('edit-cp-staff').value,visit:+document.getElementById('edit-cp-visit').value||0,res:+document.getElementById('edit-cp-res').value||0,eval:+document.getElementById('edit-cp-eval').value||0,course:+document.getElementById('edit-cp-course').value||0,emo:+document.getElementById('edit-cp-emo').value||0,plan:+document.getElementById('edit-cp-plan').value||0,proj:+document.getElementById('edit-cp-proj').value||0,consult:+document.getElementById('edit-cp-consult').value||0};
+  const conflict=DB.contactPurpose.find(c=>c.month===month&&c.staff_name===upd.staff_name&&c.id!==id);
+  if(conflict&&!confirm(`${month}月 ${upd.staff_name} 已有另一筆，覆蓋？`))return;if(conflict){await sb.from('contact_purpose').eq('id',conflict.id).delete();DB.contactPurpose=DB.contactPurpose.filter(c=>c.id!==conflict.id);}
   setBadge('saving','儲存中...');const{error}=await sb.from('contact_purpose').eq('id',id).update(upd);if(error){setBadge('error','儲存失敗');return;}
   const idx=DB.contactPurpose.findIndex(c=>c.id===id);if(idx>-1)DB.contactPurpose[idx]={...DB.contactPurpose[idx],...upd};setBadge('saved','已同步');closeModal('modal-cp');renderCP();
 }
@@ -866,8 +866,8 @@ async function saveEditCC(){
 // ══════════════════════
 async function saveOP(){
   const month=nv('op-month');
-  const data={id:Date.now(),month,staff_name,visit:nv('opp-visit'),res:nv('opp-res'),overview:nv('opp-overview'),course:nv('opp-course'),emo:nv('opp-emo'),plan:nv('opp-plan'),other:nv('opp-other')};
   const staff_name=document.getElementById('op-staff').value;
+  const data={id:Date.now(),month,staff_name,visit:nv('opp-visit'),res:nv('opp-res'),overview:nv('opp-overview'),course:nv('opp-course'),emo:nv('opp-emo'),plan:nv('opp-plan'),other:nv('opp-other')};
   const existing=DB.officePurpose.find(o=>o.month===month&&o.staff_name===staff_name);
   if(existing){if(!confirm(`${month}月 ${staff_name} 已有紀錄，是否覆蓋？`))return;setBadge('saving','儲存中...');await sb.from('office_purpose').eq('id',existing.id).delete();DB.officePurpose=DB.officePurpose.filter(o=>o.id!==existing.id);}
   else setBadge('saving','儲存中...');
