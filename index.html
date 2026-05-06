@@ -487,97 +487,69 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx);
 </div></div>
 
 <script>
-// ── Supabase REST Client（純 fetch，不需 CDN）──
+// Supabase REST client - pure fetch
 const SUPA_URL='https://yrqzaxhdssihuwimzxcx.supabase.co';
 const SUPA_KEY='sb_publishable_wvT5p3N2IPOUTf8QYtXv6Q_IT02OPtI';
 const SUPA_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycXpheGhkc3NpaHV3aW16eGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNDc2OTEsImV4cCI6MjA5MDcyMzY5MX0.VTcdJCO9bLPR73EosorHJyA3JuL-C7dAd9tpZG8JOzs';
 
-// Supabase REST client - pure fetch, no CDN needed
-function makeSb(url, publishKey, anonKey) {
-  const BASE = url + '/rest/v1';
-  const HDR = {
-    'apikey': anonKey,
-    'Authorization': 'Bearer ' + anonKey,
+async function sbFetch(method, table, params, body, prefer) {
+  const base = SUPA_URL + '/rest/v1/' + table;
+  const url = params.length ? base + '?' + params.join('&') : base;
+  const headers = {
+    'apikey': SUPA_ANON,
+    'Authorization': 'Bearer ' + SUPA_ANON,
     'Content-Type': 'application/json',
   };
-
-  async function doFetch(method, table, filters, body, prefer) {
-    let u = BASE + '/' + table;
-    const p = [];
-    if(method === 'GET') p.push('select=*');
-    if(filters && filters.length) p.push(...filters);
-    if(p.length) u += '?' + p.join('&');
-    const headers = {...HDR, 'Prefer': prefer || (method==='GET' ? '' : 'return=minimal')};
-    if(!headers['Prefer']) delete headers['Prefer'];
-    const opts = {method, headers};
-    if(body !== undefined) opts.body = JSON.stringify(body);
-    console.log(`[SB] ${method} ${u}`, body ? JSON.stringify(body).slice(0,80) : '');
-    try {
-      const controller = new AbortController();
-      const tid = setTimeout(() => controller.abort(), 12000);
-      const r = await fetch(u, {...opts, signal: controller.signal});
-      clearTimeout(tid);
-      console.log(`[SB] → ${r.status} ${r.statusText}`);
-      if(!r.ok) {
-        let msg = r.statusText;
-        try { const e = await r.json(); msg = e.message || e.hint || e.error || msg; } catch(x){}
-        return {data:null, error:{message:`HTTP ${r.status}: ${msg}`}};
-      }
-      const text = await r.text();
-      return {data: text ? JSON.parse(text) : [], error:null};
-    } catch(e) {
-      if(e.name==='AbortError') return {data:null, error:{message:'請求逾時，請重試'}};
-      return {data:null, error:{message:e.message}};
+  if(prefer) headers['Prefer'] = prefer;
+  const opts = {method, headers};
+  if(body !== undefined) opts.body = JSON.stringify(body);
+  console.log('[SB]', method, url, body ? JSON.stringify(body).slice(0,60) : '');
+  try {
+    const r = await fetch(url, opts);
+    console.log('[SB] →', r.status);
+    if(!r.ok) {
+      let msg = r.statusText;
+      try { const e = await r.json(); msg = e.message||e.hint||e.error||msg; } catch(x){}
+      return {data:null, error:{message:`${r.status}: ${msg}`}};
     }
+    const text = await r.text();
+    return {data: text ? JSON.parse(text) : [], error:null};
+  } catch(e) {
+    return {data:null, error:{message:e.message}};
   }
-
-  return {
-    from(table) {
-      const filters = [];
-      return {
-        eq(col, val) { filters.push(`${col}=eq.${val}`); return this; },
-        // GET
-        async select() {
-          return doFetch('GET', table, filters);
-        },
-        // for await - GET with order
-        order(col) {
-          filters.push(`order=${col}.asc`);
-          // return thenable for await
-          return {
-            then(resolve, reject) {
-              return doFetch('GET', table, filters).then(resolve, reject);
-            }
-          };
-        },
-        then(resolve, reject) {
-          return doFetch('GET', table, filters).then(resolve, reject);
-        },
-        // POST
-        async insert(row) {
-          const body = Array.isArray(row) ? row : [row];
-          return doFetch('POST', table, [], body, 'return=representation');
-        },
-        // PATCH
-        async update(body) {
-          if(!filters.length) return {data:null, error:{message:'update requires eq filter'}};
-          return doFetch('PATCH', table, filters, body, 'return=minimal');
-        },
-        // DELETE
-        async delete() {
-          if(!filters.length) return {data:null, error:{message:'delete requires eq filter'}};
-          return doFetch('DELETE', table, filters, undefined, 'return=minimal');
-        },
-        // UPSERT
-        async upsert(row) {
-          const body = Array.isArray(row) ? row : [row];
-          return doFetch('POST', table, [], body, 'resolution=merge-duplicates,return=minimal');
-        }
-      };
-    }
-  };
 }
-const sb = makeSb(SUPA_URL, SUPA_KEY, SUPA_ANON);
+
+const sb = {
+  from(table) {
+    const _filters = [];
+    return {
+      eq(col, val) { _filters.push(`${col}=eq.${val}`); return this; },
+      order(col) { _filters.push(`order=${col}.asc`); return this; },
+      // GET - thenable
+      then(resolve, reject) {
+        return sbFetch('GET', table, ['select=*', ..._filters]).then(resolve, reject);
+      },
+      // POST insert
+      async insert(row) {
+        const body = Array.isArray(row) ? row : [row];
+        return sbFetch('POST', table, [], body, 'return=representation');
+      },
+      // PATCH update - must have eq filter
+      async update(body) {
+        return sbFetch('PATCH', table, [..._filters], body, 'return=minimal');
+      },
+      // DELETE - must have eq filter
+      async delete() {
+        return sbFetch('DELETE', table, [..._filters], undefined, 'return=minimal');
+      },
+      // UPSERT
+      async upsert(row) {
+        const body = Array.isArray(row) ? row : [row];
+        return sbFetch('POST', table, [], body, 'resolution=merge-duplicates,return=minimal');
+      }
+    };
+  }
+};
 
 // ── Local cache ──
 const DB={visitPurpose:[],visitComms:[],contactPurpose:[],contactComms:[],officePurpose:[],officeComms:[],levels:[],schemes:[]};
