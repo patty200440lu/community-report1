@@ -1090,11 +1090,16 @@ async function exportWord(){
 
   try {
     // ── 收集資料 ──
-    const vp  = DB.visitPurpose.find(v => v.month === month);
     const vcs = DB.visitComms.filter(v => v.month === month).sort((a,b)=>a.name.localeCompare(b.name,'zh-TW'));
-    const cp  = DB.contactPurpose.find(c => c.month === month);
+    // 訪視目的從記錄加總
+    const purposeMap = {};
+    vcs.forEach(v => { const p = v.purpose||'其他'; purposeMap[p] = (purposeMap[p]||0) + v.cnt; });
+    const vpKeys = ['中心簡介','社區評估','技術指導','團隊建置','情緒支持','其他'];
+    const vp = vpKeys.some(k => purposeMap[k]) ? purposeMap : null;
+
+    const cp  = DB.contactPurpose.filter(c => c.month === month);
     const ccs = DB.contactComms.filter(c => c.month === month).sort((a,b)=>a.name.localeCompare(b.name,'zh-TW'));
-    const op  = DB.officePurpose.find(o => o.month === month);
+    const op  = DB.officePurpose.filter(o => o.month === month);
     const ocs = DB.officeComms.filter(o => o.month === month).sort((a,b)=>a.name.localeCompare(b.name,'zh-TW'));
     const schemes = DB.schemes.filter(s=>{
       const d=new Date(s.date);
@@ -1146,13 +1151,13 @@ async function exportWord(){
     // ── 一、實地輔導 ──
     body += h1('一、實地輔導');
     body += h2('（一）訪視目的統計');
-    if(vp){
-      const keys=[['中心簡介','intro'],['社區評估','eval'],['技術指導','tech'],['團隊建置','team'],['情緒支持','emo'],['其他','other']];
-      const total=keys.reduce((s,[,k])=>s+(vp[k]||0),0);
+    if(vp && Object.values(vp).some(v=>v>0)){
+      const keys=[['中心簡介','中心簡介'],['社區評估','社區評估'],['技術指導','技術指導'],['團隊建置','團隊建置'],['情緒支持','情緒支持'],['其他','其他']];
+      const total=keys.reduce((s,[k])=>s+(vp[k]||0),0);
       const n=keys.length+1; const cw=Math.floor(W/n);
       body += table(Array(n).fill(cw),[
-        row(cell('項目',cw,{hdr:true}),...keys.map(([l])=>cell(l,cw,{hdr:true}))),
-        row(cell('次數',cw,{hdr:true}),...keys.map(([,k])=>cell(vp[k]||0,cw))),
+        row(cell('項目',cw,{hdr:true}),...keys.map(([,l])=>cell(l,cw,{hdr:true}))),
+        row(cell('次數',cw,{hdr:true}),...keys.map(([k])=>cell(vp[k]||0,cw))),
       ]);
       body += p(`合計：${total} 次`,{bold:true,spBefore:60,spAfter:60});
     } else { body += p('（本月無資料）',{color:'999999'}); }
@@ -1173,15 +1178,17 @@ async function exportWord(){
     // ── 二、聯繫輔導（社區） ──
     body += h1('二、聯繫輔導（社區）');
     body += h2('（一）聯繫目的統計');
-    if(cp){
-      const keys=[['訪視邀約','visit'],['資源連結','res'],['社區評估','eval'],['課程邀約','course'],['情緒支持','emo'],['計畫討論','plan'],['專案輔導','proj'],['社區諮詢','consult']];
-      const total=keys.reduce((s,[,k])=>s+(cp[k]||0),0);
+    if(cp.length>0){
+      const cpKM={visit:'訪視邀約',res:'資源連結',eval:'社區評估',course:'課程邀約',emo:'情緒支持',plan:'計畫討論',proj:'專案輔導',consult:'社區諮詢'};
+      const cpK=Object.keys(cpKM);
+      const cpT={};cpK.forEach(k=>{cpT[k]=cp.reduce((s,c)=>s+(c[k]||0),0);});
+      const total=cpK.reduce((s,k)=>s+cpT[k],0);
       const half=4; const cw=Math.floor(W/(half+1));
       body += table(Array(half+1).fill(cw),[
-        row(cell('項目',cw,{hdr:true}),...keys.slice(0,half).map(([l])=>cell(l,cw,{hdr:true}))),
-        row(cell('次數',cw,{hdr:true}),...keys.slice(0,half).map(([,k])=>cell(cp[k]||0,cw))),
-        row(cell('項目',cw,{hdr:true}),...keys.slice(half).map(([l])=>cell(l,cw,{hdr:true}))),
-        row(cell('次數',cw,{hdr:true}),...keys.slice(half).map(([,k])=>cell(cp[k]||0,cw))),
+        row(cell('項目',cw,{hdr:true}),...cpK.slice(0,half).map(k=>cell(cpKM[k],cw,{hdr:true}))),
+        row(cell('次數',cw,{hdr:true}),...cpK.slice(0,half).map(k=>cell(cpT[k]||0,cw))),
+        row(cell('項目',cw,{hdr:true}),...cpK.slice(half).map(k=>cell(cpKM[k],cw,{hdr:true}))),
+        row(cell('次數',cw,{hdr:true}),...cpK.slice(half).map(k=>cell(cpT[k]||0,cw))),
       ]);
       body += p(`合計：${total} 次`,{bold:true});
     } else { body += p('（本月無資料）',{color:'999999'}); }
@@ -1203,13 +1210,15 @@ async function exportWord(){
     // ── 三、聯繫輔導（公所） ──
     body += h1('三、聯繫輔導（公所）');
     body += h2('（一）聯繫目的統計');
-    if(op){
-      const keys=[['訪視邀約','visit'],['資源連結','res'],['概況討論','overview'],['課程邀約','course'],['情緒支持','emo'],['計畫討論','plan'],['其他','other']];
-      const total=keys.reduce((s,[,k])=>s+(op[k]||0),0);
-      const n=keys.length+1; const cw=Math.floor(W/n);
+    if(op.length>0){
+      const opKM={visit:'訪視邀約',res:'資源連結',overview:'概況討論',course:'課程邀約',emo:'情緒支持',plan:'計畫討論',other:'其他'};
+      const opK=Object.keys(opKM);
+      const opT={};opK.forEach(k=>{opT[k]=op.reduce((s,o)=>s+(o[k]||0),0);});
+      const total=opK.reduce((s,k)=>s+opT[k],0);
+      const n=opK.length+1; const cw=Math.floor(W/n);
       body += table(Array(n).fill(cw),[
-        row(cell('項目',cw,{hdr:true}),...keys.map(([l])=>cell(l,cw,{hdr:true}))),
-        row(cell('次數',cw,{hdr:true}),...keys.map(([,k])=>cell(op[k]||0,cw))),
+        row(cell('項目',cw,{hdr:true}),...opK.map(k=>cell(opKM[k],cw,{hdr:true}))),
+        row(cell('次數',cw,{hdr:true}),...opK.map(k=>cell(opT[k]||0,cw))),
       ]);
       body += p(`合計：${total} 次`,{bold:true});
     } else { body += p('（本月無資料）',{color:'999999'}); }
